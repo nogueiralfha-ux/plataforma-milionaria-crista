@@ -148,12 +148,9 @@ app.put('/api/produtos/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// 3. Checkout & Asaas API Integration Simulator
 app.post('/api/checkout/pay', (req, res) => {
-  const { compradorNome, compradorEmail, compradorTel, produtoNome, valor } = req.body;
+  const { compradorNome, compradorEmail, compradorTel, produtoNome, valor, metodo } = req.body;
   
-  // 1. Simulate call to Asaas API to create PIX charge
-  // In production, you would call: axios.post('https://api.asaas.com/v3/payments', { ... })
   const orderId = `ORD-${Math.floor(Math.random() * 90000) + 10000}`;
   const asaasPixQrCode = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=asaas-payload-${orderId}`;
 
@@ -167,7 +164,7 @@ app.post('/api/checkout/pay', (req, res) => {
     whatsapp: compradorTel,
     produto: produtoNome || 'Método Milionário Cristão',
     valor: valor || 'R$ 97,00',
-    metodo: 'PIX',
+    metodo: metodo || 'PIX',
     status: 'Pendente'
   };
   db.pedidos.unshift(newOrder);

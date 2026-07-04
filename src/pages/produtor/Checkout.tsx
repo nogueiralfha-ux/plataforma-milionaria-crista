@@ -1,4 +1,4 @@
-import { Monitor, Smartphone, Settings2, CheckCircle, Video, LayoutTemplate, X, Mail, MessageSquare, ShieldCheck } from 'lucide-react';
+import { Monitor, Smartphone, Settings2, CheckCircle, Video, LayoutTemplate, X, Mail, MessageSquare, ShieldCheck, CreditCard, QrCode, FileText } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Checkout() {
@@ -18,6 +18,14 @@ export default function Checkout() {
   const [compradorNome, setCompradorNome] = useState('');
   const [compradorEmail, setCompradorEmail] = useState('');
   const [compradorTel, setCompradorTel] = useState('');
+  const [metodoPagamento, setMetodoPagamento] = useState<'pix' | 'cartao' | 'boleto'>('pix');
+
+  // Card specific states
+  const [cartaoNumero, setCartaoNumero] = useState('');
+  const [cartaoNome, setCartaoNome] = useState('');
+  const [cartaoValidade, setCartaoValidade] = useState('');
+  const [cartaoCvv, setCartaoCvv] = useState('');
+
   const [checkoutSucessoInfo, setCheckoutSucessoInfo] = useState<any>(null);
   
   const handleSave = () => {
@@ -41,8 +49,15 @@ export default function Checkout() {
       return;
     }
 
+    if (metodoPagamento === 'cartao' && (!cartaoNumero || !cartaoNome || !cartaoValidade || !cartaoCvv)) {
+      alert('Por favor, preencha as informações do cartão de crédito/débito!');
+      return;
+    }
+
+    const readableMetodo = metodoPagamento === 'pix' ? 'PIX' : metodoPagamento === 'cartao' ? 'Cartão de Crédito/Débito' : 'Boleto Bancário';
+
     try {
-      // 1. Initiate purchase (creates order and generates simulated QR Code)
+      // 1. Initiate purchase (creates order on backend)
       const payResponse = await fetch('/api/checkout/pay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -51,27 +66,44 @@ export default function Checkout() {
           compradorEmail,
           compradorTel,
           produtoNome: 'Método Milionário Cristão',
-          valor: 'R$ 97,00'
+          valor: 'R$ 97,00',
+          metodo: readableMetodo
         })
       });
       const payData = await payResponse.json();
 
       if (payData.success) {
-        // 2. Call Asaas Webhook to simulate approved payment immediately
-        const webhookResponse = await fetch('/api/checkout/webhook', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId: payData.orderId })
-        });
-        const webhookData = await webhookResponse.json();
+        // If card or PIX, simulate instant webhook approval
+        if (metodoPagamento !== 'boleto') {
+          const webhookResponse = await fetch('/api/checkout/webhook', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: payData.orderId })
+          });
+          const webhookData = await webhookResponse.json();
 
-        if (webhookData.success) {
+          if (webhookData.success) {
+            setCheckoutSucessoInfo({
+              orderId: payData.orderId,
+              nome: compradorNome,
+              email: webhookData.delivery.email,
+              tel: webhookData.delivery.whatsapp,
+              pdf: webhookData.delivery.pdf,
+              metodo: readableMetodo,
+              status: 'Aprovado'
+            });
+          }
+        } else {
+          // For boleto, keep it pending and show barcode + simulated settlement trigger
           setCheckoutSucessoInfo({
             orderId: payData.orderId,
             nome: compradorNome,
-            email: webhookData.delivery.email,
-            tel: webhookData.delivery.whatsapp,
-            pdf: webhookData.delivery.pdf
+            email: compradorEmail,
+            tel: compradorTel,
+            pdf: 'metodo-milionario-cristao-ebook.pdf',
+            metodo: readableMetodo,
+            status: 'Pendente',
+            barcode: '34191.79001 01043.513184 91020.150008 7 98200000009700'
           });
         }
       }
@@ -80,8 +112,32 @@ export default function Checkout() {
       setCompradorNome('');
       setCompradorEmail('');
       setCompradorTel('');
+      setCartaoNumero('');
+      setCartaoNome('');
+      setCartaoValidade('');
+      setCartaoCvv('');
     } catch (err) {
       alert('Erro ao processar pagamento com o servidor.');
+    }
+  };
+
+  const handleConfirmBoletoPayment = async (orderId: string) => {
+    try {
+      const response = await fetch('/api/checkout/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setCheckoutSucessoInfo((prev: any) => ({
+          ...prev,
+          status: 'Aprovado',
+          pdf: data.delivery.pdf
+        }));
+      }
+    } catch (err) {
+      alert('Erro ao confirmar compensação do boleto.');
     }
   };
 
@@ -299,7 +355,7 @@ export default function Checkout() {
                    )}
                  </div>
 
-                 {/* Lado Direito: Formulário de Pagamento REAL */}
+                 {/* Lado Direito: Formulário de Pagamento */}
                  <div className={previewMode === 'mobile' ? 'col-span-1' : 'lg:col-span-2'}>
                    <div className="bg-white rounded-xl shadow-xl p-6 border border-gray-100 space-y-5 sticky top-8">
                      <h3 className="font-bold text-[#1A1A1A] border-b border-gray-100 pb-3">Dados Pessoais</h3>
@@ -330,9 +386,99 @@ export default function Checkout() {
                        />
                      </div>
                      
-                     <h3 className="font-bold text-[#1A1A1A] border-b border-gray-100 pb-3 pt-2">Pagamento</h3>
-                     <div className="flex gap-2">
-                       <div className="flex-1 h-12 border-2 border-[#0F3D2E] rounded-lg flex items-center justify-center bg-[#0F3D2E]/5 text-[#0F3D2E] font-bold text-xs">PIX (Imediato)</div>
+                     <h3 className="font-bold text-[#1A1A1A] border-b border-gray-100 pb-3 pt-2">Forma de Pagamento</h3>
+                     
+                     {/* Payment selector tabs */}
+                     <div className="grid grid-cols-3 gap-1 bg-gray-100 p-1 rounded-lg">
+                       <button 
+                         type="button"
+                         onClick={() => setMetodoPagamento('pix')}
+                         className={`py-1.5 text-[10px] font-bold rounded transition-all ${
+                           metodoPagamento === 'pix' ? 'bg-white text-[#0F3D2E] shadow-sm' : 'text-gray-500'
+                         }`}
+                       >
+                         PIX
+                       </button>
+                       <button 
+                         type="button"
+                         onClick={() => setMetodoPagamento('cartao')}
+                         className={`py-1.5 text-[10px] font-bold rounded transition-all ${
+                           metodoPagamento === 'cartao' ? 'bg-white text-[#0F3D2E] shadow-sm' : 'text-gray-500'
+                         }`}
+                       >
+                         Cartão
+                       </button>
+                       <button 
+                         type="button"
+                         onClick={() => setMetodoPagamento('boleto')}
+                         className={`py-1.5 text-[10px] font-bold rounded transition-all ${
+                           metodoPagamento === 'boleto' ? 'bg-white text-[#0F3D2E] shadow-sm' : 'text-gray-500'
+                         }`}
+                       >
+                         Boleto
+                       </button>
+                     </div>
+
+                     {/* Payment details depending on selected method */}
+                     <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 text-xs">
+                       {metodoPagamento === 'pix' && (
+                         <div className="text-center text-gray-500 space-y-1 py-2">
+                           <QrCode size={24} className="mx-auto text-gray-400" />
+                           <p className="font-bold">PIX Copia e Cola imediato</p>
+                           <p className="text-[10px] opacity-80">Liberação do e-book na mesma hora.</p>
+                         </div>
+                       )}
+
+                       {metodoPagamento === 'cartao' && (
+                         <div className="space-y-2 py-1">
+                           <div className="flex gap-2 items-center text-[10px] font-bold text-gray-400 mb-1">
+                             <CreditCard size={12} />
+                             <span>DADOS DO CARTÃO</span>
+                           </div>
+                           <input 
+                             type="text" 
+                             required
+                             value={cartaoNumero}
+                             onChange={(e) => setCartaoNumero(e.target.value)}
+                             placeholder="Número do Cartão" 
+                             className="w-full px-2.5 py-1.5 border border-gray-200 rounded bg-white text-[11px]" 
+                           />
+                           <input 
+                             type="text" 
+                             required
+                             value={cartaoNome}
+                             onChange={(e) => setCartaoNome(e.target.value)}
+                             placeholder="Nome Impresso no Cartão" 
+                             className="w-full px-2.5 py-1.5 border border-gray-200 rounded bg-white text-[11px]" 
+                           />
+                           <div className="grid grid-cols-2 gap-2">
+                             <input 
+                               type="text" 
+                               required
+                               value={cartaoValidade}
+                               onChange={(e) => setCartaoValidade(e.target.value)}
+                               placeholder="MM/AA" 
+                               className="w-full px-2.5 py-1.5 border border-gray-200 rounded bg-white text-[11px] text-center" 
+                             />
+                             <input 
+                               type="text" 
+                               required
+                               value={cartaoCvv}
+                               onChange={(e) => setCartaoCvv(e.target.value)}
+                               placeholder="CVV" 
+                               className="w-full px-2.5 py-1.5 border border-gray-200 rounded bg-white text-[11px] text-center" 
+                             />
+                           </div>
+                         </div>
+                       )}
+
+                       {metodoPagamento === 'boleto' && (
+                         <div className="text-center text-gray-500 space-y-1 py-2">
+                           <FileText size={24} className="mx-auto text-gray-400" />
+                           <p className="font-bold">Boleto Bancário à Vista</p>
+                           <p className="text-[10px] opacity-80">Acesso enviado por e-mail e liberado após confirmação bancária (24h-48h).</p>
+                         </div>
+                       )}
                      </div>
 
                      <div className="pt-4 border-t border-gray-100 mt-6">
@@ -367,33 +513,71 @@ export default function Checkout() {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-2xl font-serif font-black text-[#0F3D2E]">Pagamento Aprovado!</h3>
+              <h3 className="text-2xl font-serif font-black text-[#0F3D2E]">
+                {checkoutSucessoInfo.status === 'Aprovado' ? 'Pagamento Aprovado!' : 'Boleto Gerado!'}
+              </h3>
               <p className="text-xs text-gray-500 font-mono">ID do Pedido: {checkoutSucessoInfo.orderId}</p>
+              <p className="text-xs font-bold text-gray-600 uppercase">Método: {checkoutSucessoInfo.metodo}</p>
             </div>
 
-            <div className="bg-gray-50 p-5 rounded-2xl text-left space-y-4 border border-gray-100">
-              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200 pb-2">Notificação de Envio Simulado</h4>
-              
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg flex-shrink-0">
-                  <Mail className="w-4 h-4" />
+            {/* Boleto specific actions */}
+            {checkoutSucessoInfo.status === 'Pendente' && checkoutSucessoInfo.barcode && (
+              <div className="bg-amber-50 p-4 border border-amber-200 rounded-2xl text-left space-y-3">
+                <span className="text-[10px] font-bold text-amber-800 uppercase block">CÓDIGO DE BARRAS</span>
+                <div className="flex gap-2 items-center">
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={checkoutSucessoInfo.barcode} 
+                    className="w-full text-xs font-mono bg-white border border-amber-200 p-2 rounded focus:outline-none" 
+                  />
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(checkoutSucessoInfo.barcode);
+                      alert('Código de barras copiado!');
+                    }}
+                    className="px-3 py-2 bg-amber-600 text-white rounded text-xs font-bold"
+                  >
+                    Copiar
+                  </button>
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-gray-800">E-mail enviado para: <span className="font-mono font-medium text-gray-500">{checkoutSucessoInfo.email}</span></p>
-                  <p className="text-[11px] text-gray-400 mt-1">Anexo enviado: <span className="font-semibold">{checkoutSucessoInfo.pdf}</span></p>
+                <div className="pt-2 border-t border-amber-200/50">
+                  <p className="text-[10px] text-amber-700 leading-relaxed font-bold">Simule a compensação bancária abaixo para processar o webhook imediatamente e testar a liberação do curso:</p>
+                  <button
+                    onClick={() => handleConfirmBoletoPayment(checkoutSucessoInfo.orderId)}
+                    className="w-full mt-2.5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs uppercase rounded-lg transition-colors"
+                  >
+                    Simular Compensação de Boleto
+                  </button>
                 </div>
               </div>
+            )}
 
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-green-50 text-green-600 rounded-lg flex-shrink-0">
-                  <MessageSquare className="w-4 h-4" />
+            {checkoutSucessoInfo.status === 'Aprovado' && (
+              <div className="bg-gray-50 p-5 rounded-2xl text-left space-y-4 border border-gray-100">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200 pb-2">Notificação de Envio Simulado</h4>
+                
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg flex-shrink-0">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-800">E-mail enviado para: <span className="font-mono font-medium text-gray-500">{checkoutSucessoInfo.email}</span></p>
+                    <p className="text-[11px] text-gray-400 mt-1">Anexo enviado: <span className="font-semibold">{checkoutSucessoInfo.pdf}</span></p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-gray-800">WhatsApp enviado para: <span className="font-mono font-medium text-gray-500">{checkoutSucessoInfo.tel}</span></p>
-                  <p className="text-[11px] text-gray-400 mt-1">"Graça e Paz! Seu pagamento do Método Milionário Cristão foi confirmado. Acesse agora pelo link..."</p>
+
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-green-50 text-green-600 rounded-lg flex-shrink-0">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-800">WhatsApp enviado para: <span className="font-mono font-medium text-gray-500">{checkoutSucessoInfo.tel}</span></p>
+                    <p className="text-[11px] text-gray-400 mt-1">"Graça e Paz! Seu pagamento do Método Milionário Cristão foi confirmado. Acesse agora pelo link..."</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="pt-2">
               <button 
