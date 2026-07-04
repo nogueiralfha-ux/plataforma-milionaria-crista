@@ -1,0 +1,108 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "nome": "Pr. Gabriel Santos",
+      "email": "gabriel.santos@gmail.com",
+      "role": "Produtor",
+      "status": "Ativo"
+    },
+    {
+      "id": 2,
+      "nome": "Ana Vasconcelos",
+      "email": "anapaula@gmail.com",
+      "role": "Afiliado",
+      "status": "Ativo"
+    },
+    {
+      "id": 3,
+      "nome": "João Lucas Teixeira",
+      "email": "joao.lucas@gmail.com",
+      "role": "Afiliado",
+      "status": "Pendente"
+    },
+    {
+      "id": 4,
+      "nome": "Ruth Fonseca",
+      "email": "ruth.fonseca@gmail.com",
+      "role": "Cliente",
+      "status": "Ativo"
+    }
+  ],
+  "produtos": [
+    {
+      "id": 1,
+      "nome": "Método Milionário Cristão",
+      "preco": "R$ 997,00",
+      "vendas": 142,
+      "comissao": "50%",
+      "status": "Ativo",
+      "linkAfiliado": "https://plataforma.com/inv/mmc-88291",
+      "videoAulaUrl": "https://vimeo.com/83918239",
+      "pdfMaterialNome": "metodo-milionario-cristao-ebook.pdf"
+    },
+    {
+      "id": 2,
+      "nome": "Jornada da Prosperidade",
+      "preco": "R$ 497,00",
+      "vendas": 89,
+      "comissao": "40%",
+      "status": "Ativo",
+      "linkAfiliado": "https://plataforma.com/inv/jdp-44122",
+      "videoAulaUrl": "https://vimeo.com/83918240",
+      "pdfMaterialNome": "jornada-da-prosperidade-ebook.pdf"
+    }
+  ],
+  "pedidos": [
+    {
+      "id": "ORD-98218",
+      "data": "03/07/2026",
+      "cliente": "Roberto Firmino",
+      "email": "roberto@gmail.com",
+      "whatsapp": "11999998888",
+      "produto": "Método Milionário Cristão",
+      "valor": "R$ 997,00",
+      "metodo": "PIX",
+      "status": "Aprovado"
+    },
+    {
+      "id": "ORD-98102",
+      "data": "02/07/2026",
+      "cliente": "Beatriz Azevedo",
+      "email": "beatriz@gmail.com",
+      "whatsapp": "21988887777",
+      "produto": "Jornada da Prosperidade",
+      "valor": "R$ 497,00",
+      "metodo": "Cartão de Crédito",
+      "status": "Aprovado"
+    }
+  ],
+  "cliente_biblioteca": [
+    {
+      "id": 1,
+      "nome": "Método Milionário Cristão",
+      "preco": "R$ 997,00",
+      "videoAulaUrl": "https://vimeo.com/83918239",
+      "pdfMaterialNome": "metodo-milionario-cristao-ebook.pdf",
+      "dataCompra": "25/06/2026"
+    }
+  ],
+  "saques": [
+    {
+      "id": "SQ-9932",
+      "nome": "Ana Paula Vasconcelos",
+      "chave": "anapaula@gmail.com",
+      "valor": 450,
+      "data": "03/07/2026",
+      "status": "Pendente"
+    },
+    {
+      "id": "SQ-9931",
+      "nome": "João Lucas Teixeira",
+      "chave": "000.111.222-33",
+      "valor": 1250,
+      "data": "02/07/2026",
+      "status": "Pendente"
+    }
+  ]
+}

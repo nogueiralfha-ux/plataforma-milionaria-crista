@@ -16,38 +16,18 @@ export default function Produtos() {
   const [editVideoAulaUrl, setEditVideoAulaUrl] = useState('');
   const [editPdfMaterialNome, setEditPdfMaterialNome] = useState('');
   
-  useEffect(() => {
-    const saved = localStorage.getItem('produtos_salvos');
-    if (saved) {
-      setProdutos(JSON.parse(saved));
-    } else {
-      const defaultProdutos = [
-        {
-          id: 1,
-          nome: 'Método Milionário Cristão',
-          preco: 'R$ 997,00',
-          vendas: 142,
-          comissao: '50%',
-          status: 'Ativo',
-          linkAfiliado: 'https://plataforma.com/inv/mmc-88291',
-          videoAulaUrl: 'https://vimeo.com/83918239',
-          pdfMaterialNome: 'metodo-milionario-cristao-ebook.pdf'
-        },
-        {
-          id: 2,
-          nome: 'Jornada da Prosperidade',
-          preco: 'R$ 497,00',
-          vendas: 89,
-          comissao: '40%',
-          status: 'Ativo',
-          linkAfiliado: 'https://plataforma.com/inv/jdp-44122',
-          videoAulaUrl: 'https://vimeo.com/83918240',
-          pdfMaterialNome: 'jornada-da-prosperidade-ebook.pdf'
-        }
-      ];
-      setProdutos(defaultProdutos);
-      localStorage.setItem('produtos_salvos', JSON.stringify(defaultProdutos));
+  const fetchProdutos = async () => {
+    try {
+      const response = await fetch('/api/produtos');
+      const data = await response.json();
+      setProdutos(data);
+    } catch (err) {
+      console.error('Erro ao buscar produtos:', err);
     }
+  };
+
+  useEffect(() => {
+    fetchProdutos();
   }, []);
 
   const handleCopy = (link: string) => {
@@ -67,27 +47,35 @@ export default function Produtos() {
     setIsEditModalOpen(true);
   };
 
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProduct) return;
 
-    const updated = produtos.map(p => 
-      p.id === selectedProduct.id 
-        ? { 
-            ...p, 
-            nome: editNome, 
-            preco: `R$ ${editPreco.replace('.', ',')},00`, 
-            comissao: `${editComissao}%`, 
-            status: editStatus,
-            videoAulaUrl: editVideoAulaUrl,
-            pdfMaterialNome: editPdfMaterialNome
-          } 
-        : p
-    );
-    
-    setProdutos(updated);
-    localStorage.setItem('produtos_salvos', JSON.stringify(updated));
-    setIsEditModalOpen(false);
+    try {
+      const response = await fetch(`/api/produtos/${selectedProduct.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          nome: editNome,
+          preco: editPreco,
+          comissao: editComissao,
+          status: editStatus,
+          videoAulaUrl: editVideoAulaUrl,
+          pdfMaterialNome: editPdfMaterialNome
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchProdutos();
+        setIsEditModalOpen(false);
+      } else {
+        alert('Erro ao atualizar produto.');
+      }
+    } catch (err) {
+      alert('Erro de conexão com o servidor.');
+    }
   };
 
   return (

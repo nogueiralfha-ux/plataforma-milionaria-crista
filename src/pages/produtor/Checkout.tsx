@@ -35,53 +35,54 @@ export default function Checkout() {
     }, 1500);
   };
 
-  const handleCheckoutBuy = () => {
+  const handleCheckoutBuy = async () => {
     if (!compradorNome || !compradorEmail || !compradorTel) {
       alert('Por favor, preencha todos os campos no formulário para simular a compra!');
       return;
     }
 
-    const orderId = `ORD-${Math.floor(Math.random() * 90000) + 10000}`;
-    const newOrder = {
-      id: orderId,
-      data: new Date().toLocaleDateString('pt-BR'),
-      cliente: compradorNome,
-      email: compradorEmail,
-      whatsapp: compradorTel,
-      produto: 'Método Milionário Cristão',
-      valor: 'R$ 97,00',
-      metodo: 'PIX',
-      status: 'Aprovado'
-    };
+    try {
+      // 1. Initiate purchase (creates order and generates simulated QR Code)
+      const payResponse = await fetch('/api/checkout/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          compradorNome,
+          compradorEmail,
+          compradorTel,
+          produtoNome: 'Método Milionário Cristão',
+          valor: 'R$ 97,00'
+        })
+      });
+      const payData = await payResponse.json();
 
-    // Save order
-    const savedOrders = JSON.parse(localStorage.getItem('pedidos_salvos') || '[]');
-    localStorage.setItem('pedidos_salvos', JSON.stringify([newOrder, ...savedOrders]));
+      if (payData.success) {
+        // 2. Call Asaas Webhook to simulate approved payment immediately
+        const webhookResponse = await fetch('/api/checkout/webhook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: payData.orderId })
+        });
+        const webhookData = await webhookResponse.json();
 
-    // Unlock in client's library
-    const unlockedProduct = {
-      id: Date.now(),
-      nome: 'Método Milionário Cristão',
-      preco: 'R$ 97,00',
-      videoAulaUrl: 'https://vimeo.com/83918239',
-      pdfMaterialNome: 'metodo-milionario-cristao-ebook.pdf',
-      dataCompra: new Date().toLocaleDateString('pt-BR')
-    };
-    const savedLib = JSON.parse(localStorage.getItem('cliente_biblioteca') || '[]');
-    localStorage.setItem('cliente_biblioteca', JSON.stringify([unlockedProduct, ...savedLib]));
+        if (webhookData.success) {
+          setCheckoutSucessoInfo({
+            orderId: payData.orderId,
+            nome: compradorNome,
+            email: webhookData.delivery.email,
+            tel: webhookData.delivery.whatsapp,
+            pdf: webhookData.delivery.pdf
+          });
+        }
+      }
 
-    setCheckoutSucessoInfo({
-      orderId,
-      nome: compradorNome,
-      email: compradorEmail,
-      tel: compradorTel,
-      pdf: 'metodo-milionario-cristao-ebook.pdf'
-    });
-
-    // Reset inputs
-    setCompradorNome('');
-    setCompradorEmail('');
-    setCompradorTel('');
+      // Reset inputs
+      setCompradorNome('');
+      setCompradorEmail('');
+      setCompradorTel('');
+    } catch (err) {
+      alert('Erro ao processar pagamento com o servidor.');
+    }
   };
 
   return (

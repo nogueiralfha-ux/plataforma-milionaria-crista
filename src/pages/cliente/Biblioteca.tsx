@@ -26,17 +26,16 @@ export default function Biblioteca() {
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('cliente_biblioteca');
-    if (saved) {
+    const fetchBiblioteca = async () => {
       try {
-        setProdutos(JSON.parse(saved));
-      } catch (e) {
-        setProdutos(defaultAdquiridos);
+        const response = await fetch('/api/cliente/biblioteca');
+        const data = await response.json();
+        setProdutos(data);
+      } catch (err) {
+        console.error('Erro ao buscar biblioteca:', err);
       }
-    } else {
-      setProdutos(defaultAdquiridos);
-      localStorage.setItem('cliente_biblioteca', JSON.stringify(defaultAdquiridos));
-    }
+    };
+    fetchBiblioteca();
   }, []);
 
   return (

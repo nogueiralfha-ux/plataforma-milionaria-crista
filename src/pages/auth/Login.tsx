@@ -8,22 +8,27 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Exclusive Admin credentials check
-    if (email === 'nogueiralfha@gmail.com' && password === 'missionario405') {
-      const adminUser = {
-        email: 'nogueiralfha@gmail.com',
-        nome: 'Pr. Nogueira',
-        superAdmin: true,
-        role: 'admin'
-      };
-      localStorage.setItem('current_user', JSON.stringify(adminUser));
-      navigate('/painel');
-    } else {
-      setError('Credenciais incorretas. Apenas o administrador geral nogueiralfha@gmail.com pode acessar a plataforma.');
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await response.json();
+      if (data.success) {
+        localStorage.setItem('current_user', JSON.stringify(data.user));
+        navigate('/painel');
+      } else {
+        setError(data.error || 'Credenciais incorretas.');
+      }
+    } catch (err) {
+      setError('Erro ao conectar com o servidor.');
     }
   };
 

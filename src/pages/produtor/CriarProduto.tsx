@@ -41,36 +41,35 @@ export default function CriarProduto() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome || !preco) return;
     
     setSalvando(true);
     
-    // Simulate save
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/produtos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ nome, preco, comissao, videoAulaUrl, pdfMaterialNome })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSalvando(false);
+        setSucesso(true);
+        setTimeout(() => {
+          navigate('/produtor/produtos');
+        }, 2000);
+      } else {
+        setSalvando(false);
+        alert('Erro ao cadastrar produto.');
+      }
+    } catch (err) {
       setSalvando(false);
-      setSucesso(true);
-      
-      const saved = JSON.parse(localStorage.getItem('produtos_salvos') || '[]');
-      const newProduct = {
-        id: Date.now(),
-        nome,
-        preco: `R$ ${preco.replace('.', ',')}`,
-        vendas: 0,
-        comissao: comissao ? `${comissao}%` : '0%',
-        status: 'Ativo',
-        linkAfiliado: `https://plataforma.com/inv/${nome.toLowerCase().replace(/\s+/g, '-').substring(0, 10)}-${Math.floor(Math.random() * 10000)}`,
-        videoAulaUrl: videoAulaUrl || 'https://vimeo.com/83918239',
-        pdfMaterialNome: pdfMaterialNome || `${nome.toLowerCase().replace(/\s+/g, '-')}-ebook.pdf`
-      };
-      
-      localStorage.setItem('produtos_salvos', JSON.stringify([...saved, newProduct]));
-
-      setTimeout(() => {
-        navigate('/produtor/produtos');
-      }, 2000);
-    }, 1500);
+      alert('Erro de conexão com o servidor.');
+    }
   };
 
   return (
