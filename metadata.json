@@ -1,0 +1,8 @@
+{
+  "name": "Plataforma Milionária Cristã",
+  "description": "Plataforma completa para produtores, afiliados e clientes com integração Firebase.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
