@@ -12,6 +12,7 @@ export default function Login() {
     e.preventDefault();
     setError(null);
 
+    // 1. Tenta autenticação via Servidor Backend
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -20,15 +21,31 @@ export default function Login() {
         },
         body: JSON.stringify({ email, password })
       });
-      const data = await response.json();
-      if (data.success) {
-        localStorage.setItem('current_user', JSON.stringify(data.user));
-        navigate('/painel');
-      } else {
-        setError(data.error || 'Credenciais incorretas.');
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          localStorage.setItem('current_user', JSON.stringify(data.user));
+          navigate('/painel');
+          return;
+        }
       }
     } catch (err) {
-      setError('Erro ao conectar com o servidor.');
+      console.log('Servidor offline. Usando verificação local.');
+    }
+
+    // 2. Fallback de segurança local (para sites estáticos ou offline)
+    if (email === 'nogueiralfha@gmail.com' && password === 'missionario405') {
+      const adminUser = {
+        email: 'nogueiralfha@gmail.com',
+        nome: 'Pr. Nogueira',
+        superAdmin: true,
+        role: 'admin'
+      };
+      localStorage.setItem('current_user', JSON.stringify(adminUser));
+      navigate('/painel');
+    } else {
+      setError('Credenciais incorretas. Verifique o e-mail e a senha digitados.');
     }
   };
 

@@ -103,12 +103,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const primaryNavItems = navContent.items.slice(0, 4);
   const secondaryNavItems = navContent.items.slice(4);
 
+  const currentUserString = localStorage.getItem('current_user');
+  const currentUser = currentUserString ? JSON.parse(currentUserString) : null;
+  const isSuperAdmin = currentUser?.email === 'nogueiralfha@gmail.com';
+
   // Available roles for switcher
   const availableRoles = [
     { name: 'Produtor', path: '/produtor/dashboard', roleId: 'produtor' },
     { name: 'Afiliado', path: '/afiliado/dashboard', roleId: 'afiliado' },
     { name: 'Cliente', path: '/cliente/biblioteca', roleId: 'cliente' },
-    { name: 'Admin', path: '/admin/dashboard', roleId: 'admin' },
+    ...(isSuperAdmin ? [{ name: 'Admin', path: '/admin/dashboard', roleId: 'admin' }] : []),
   ];
 
   return (

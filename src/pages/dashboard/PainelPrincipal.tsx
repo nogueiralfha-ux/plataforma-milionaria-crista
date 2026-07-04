@@ -2,6 +2,10 @@ import { Link } from 'react-router-dom';
 import { Package, MousePointerClick, BookOpen, ShieldAlert } from 'lucide-react';
 
 export default function PainelPrincipal() {
+  const currentUserString = localStorage.getItem('current_user');
+  const currentUser = currentUserString ? JSON.parse(currentUserString) : null;
+  const isSuperAdmin = currentUser?.email === 'nogueiralfha@gmail.com';
+
   const roles = [
     {
       id: 'produtor',
@@ -27,14 +31,14 @@ export default function PainelPrincipal() {
       path: '/cliente/biblioteca',
       color: 'bg-white border-[#E5E7EB] hover:border-[#0F3D2E] hover:shadow-lg'
     },
-    {
+    ...(isSuperAdmin ? [{
       id: 'admin',
       title: 'Administrador',
       description: 'Gestão geral da plataforma e finanças.',
       icon: <ShieldAlert className="h-8 w-8 text-[#E5C384]" />,
       path: '/admin/dashboard',
       color: 'bg-[#0F3D2E] text-white border-[#0F3D2E] hover:bg-[#0B2E23] hover:shadow-lg'
-    }
+    }] : [])
   ];
 
   return (
