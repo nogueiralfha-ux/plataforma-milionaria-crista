@@ -15,6 +15,7 @@ export default function CriarProduto() {
   const [imagem, setImagem] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
+  const [tipo, setTipo] = useState<'Curso' | 'Digital' | 'Físico'>('Curso');
 
   // New fields for course content delivery
   const [videoAulaUrl, setVideoAulaUrl] = useState('');
@@ -50,7 +51,7 @@ export default function CriarProduto() {
     setSalvando(true);
     
     try {
-      const data = await postApi('/api/produtos', { nome, preco, comissao, videoAulaUrl, pdfMaterialNome });
+      const data = await postApi('/api/produtos', { nome, preco, comissao, videoAulaUrl, pdfMaterialNome, tipo });
       if (data.success) {
         setSalvando(false);
         setSucesso(true);
@@ -111,6 +112,19 @@ export default function CriarProduto() {
               ></textarea>
             </div>
 
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-bold text-[#1A1A1A]">Tipo de Produto *</label>
+              <select 
+                value={tipo}
+                onChange={(e) => setTipo(e.target.value as any)}
+                className="w-full px-4 py-3 border border-[#E5E7EB] text-[#1A1A1A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5C384] bg-white text-sm"
+              >
+                <option value="Curso">Curso Online / Área de Membros</option>
+                <option value="Digital">Produto Digital / E-book / PDF</option>
+                <option value="Físico">Produto Físico / Envio Postal</option>
+              </select>
+            </div>
+
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#1A1A1A]">Preço de Venda (R$) *</label>
               <input 
@@ -138,39 +152,67 @@ export default function CriarProduto() {
               />
             </div>
 
-            {/* Conteúdos e Materiais Anexados */}
-            <div className="space-y-4 md:col-span-2 border-t border-gray-100 pt-6 mt-2">
-              <h3 className="font-bold text-lg text-[#0F3D2E]">Conteúdo e Entrega Automática</h3>
-              <p className="text-xs text-gray-400">Insira as URLs dos vídeos e o nome dos arquivos que serão entregues por e-mail/WhatsApp imediatamente após a compra.</p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
-                    <Video className="w-3.5 h-3.5 text-gray-400" /> URL da Vídeo-Aula (Vimeo/YouTube)
-                  </label>
-                  <input 
-                    type="text" 
-                    value={videoAulaUrl}
-                    onChange={(e) => setVideoAulaUrl(e.target.value)}
-                    placeholder="Ex: https://vimeo.com/83918239"
-                    className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5C384] text-sm" 
-                  />
-                </div>
+             {/* Conteúdos e Materiais Anexados */}
+             <div className="space-y-4 md:col-span-2 border-t border-gray-100 pt-6 mt-2">
+               <h3 className="font-bold text-lg text-[#0F3D2E]">Conteúdo e Entrega Automática</h3>
+               
+               {tipo === 'Curso' && (
+                 <>
+                   <p className="text-xs text-gray-400">Insira a URL da aula e o PDF de boas-vindas/material que serão liberados na biblioteca do cliente.</p>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                       <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                         <Video className="w-3.5 h-3.5 text-gray-400" /> URL da Vídeo-Aula (Vimeo/YouTube)
+                       </label>
+                       <input 
+                         type="text" 
+                         value={videoAulaUrl}
+                         onChange={(e) => setVideoAulaUrl(e.target.value)}
+                         placeholder="Ex: https://vimeo.com/83918239"
+                         className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5C384] text-sm" 
+                       />
+                     </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-gray-400" /> Nome do E-book / PDF a Entregar
-                  </label>
-                  <input 
-                    type="text" 
-                    value={pdfMaterialNome}
-                    onChange={(e) => setPdfMaterialNome(e.target.value)}
-                    placeholder="Ex: e-book-sabedoria-financeira.pdf"
-                    className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5C384] text-sm" 
-                  />
-                </div>
-              </div>
-            </div>
+                     <div className="space-y-2">
+                       <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                         <FileText className="w-3.5 h-3.5 text-gray-400" /> Nome do E-book / PDF a Entregar
+                       </label>
+                       <input 
+                         type="text" 
+                         value={pdfMaterialNome}
+                         onChange={(e) => setPdfMaterialNome(e.target.value)}
+                         placeholder="Ex: ebook-material.pdf"
+                         className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5C384] text-sm" 
+                       />
+                     </div>
+                   </div>
+                 </>
+               )}
+
+               {tipo === 'Digital' && (
+                 <>
+                   <p className="text-xs text-gray-400">Insira o nome do arquivo PDF/E-book que o cliente poderá baixar após o pagamento.</p>
+                   <div className="space-y-2 max-w-md">
+                     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                       <FileText className="w-3.5 h-3.5 text-gray-400" /> Nome do E-book / PDF a Entregar
+                     </label>
+                     <input 
+                       type="text" 
+                       value={pdfMaterialNome}
+                       onChange={(e) => setPdfMaterialNome(e.target.value)}
+                       placeholder="Ex: ebook-prosperidade.pdf"
+                       className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5C384] text-sm" 
+                     />
+                   </div>
+                 </>
+               )}
+
+               {tipo === 'Físico' && (
+                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs leading-relaxed">
+                   <strong>Atenção:</strong> Por se tratar de um produto físico, nenhum arquivo digital será liberado para download na biblioteca do cliente. O formulário de pagamento no checkout solicitará automaticamente os dados residenciais de entrega do comprador para envio postal.
+                 </div>
+               )}
+             </div>
             
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-bold text-[#1A1A1A]">Imagem de Capa</label>

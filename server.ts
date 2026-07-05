@@ -215,7 +215,7 @@ app.get('/api/produtos', (req, res) => {
 
 app.post('/api/produtos', (req, res) => {
   try {
-    const { nome, preco, comissao, videoAulaUrl, pdfMaterialNome } = req.body;
+    const { nome, preco, comissao, videoAulaUrl, pdfMaterialNome, tipo } = req.body;
     if (!nome) {
       return res.status(400).json({ success: false, error: 'Nome do produto é obrigatório.' });
     }
@@ -230,7 +230,8 @@ app.post('/api/produtos', (req, res) => {
       status: 'Ativo',
       linkAfiliado: `https://plataforma.com/inv/${nome.toLowerCase().replace(/\s+/g, '-').substring(0, 10)}-${Math.floor(Math.random() * 10000)}`,
       videoAulaUrl: videoAulaUrl || 'https://vimeo.com/83918239',
-      pdfMaterialNome: pdfMaterialNome || `${nome.toLowerCase().replace(/\s+/g, '-')}-ebook.pdf`
+      pdfMaterialNome: pdfMaterialNome || `${nome.toLowerCase().replace(/\s+/g, '-')}-ebook.pdf`,
+      tipo: tipo || 'Curso'
     };
     db.produtos.unshift(newProduct);
     writeDB(db);
@@ -243,7 +244,7 @@ app.post('/api/produtos', (req, res) => {
 
 app.put('/api/produtos/:id', (req, res) => {
   const id = parseInt(req.params.id);
-  const { nome, preco, comissao, videoAulaUrl, pdfMaterialNome, status } = req.body;
+  const { nome, preco, comissao, videoAulaUrl, pdfMaterialNome, status, tipo } = req.body;
   const db = readDB();
   db.produtos = db.produtos.map((p: any) => 
     p.id === id 
@@ -254,7 +255,8 @@ app.put('/api/produtos/:id', (req, res) => {
           comissao: comissao.includes('%') ? comissao : `${comissao}%`, 
           status,
           videoAulaUrl,
-          pdfMaterialNome
+          pdfMaterialNome,
+          tipo: tipo || p.tipo || 'Curso'
         } 
       : p
   );

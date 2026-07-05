@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Video, FileText, Download, Play, CheckCircle } from 'lucide-react';
+import { BookOpen, Video, FileText, Download, Play, CheckCircle, Truck } from 'lucide-react';
 import { fetchApi } from '../../utils/api';
 
 type Adquirido = {
@@ -9,6 +9,7 @@ type Adquirido = {
   videoAulaUrl: string;
   pdfMaterialNome: string;
   dataCompra: string;
+  tipo?: 'Curso' | 'Digital' | 'Físico';
 };
 
 const defaultAdquiridos: Adquirido[] = [
@@ -18,7 +19,8 @@ const defaultAdquiridos: Adquirido[] = [
     preco: 'R$ 997,00',
     videoAulaUrl: 'https://vimeo.com/83918239',
     pdfMaterialNome: 'metodo-milionario-cristao-ebook.pdf',
-    dataCompra: '25/06/2026'
+    dataCompra: '25/06/2026',
+    tipo: 'Curso'
   }
 ];
 
@@ -70,37 +72,59 @@ export default function Biblioteca() {
 
             {/* Conteúdos e Ações */}
             <div className="p-6 space-y-4 flex-1">
-              <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="flex items-center gap-2">
-                  <Video className="w-4 h-4 text-gray-400" />
-                  <span className="text-xs font-bold text-gray-700">Vídeo-Aula do Método</span>
+              {produto.tipo === 'Físico' ? (
+                <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl space-y-3">
+                  <div className="flex items-center gap-2 text-amber-900">
+                    <Truck className="w-4 h-4 text-amber-700 animate-pulse" />
+                    <span className="text-xs font-bold">Status do Envio Postal</span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    Seu produto físico está sendo preparado para postagem nos Correios. Você receberá o código de rastreio via WhatsApp/E-mail assim que for postado.
+                  </p>
+                  <div className="text-[10px] text-amber-600 bg-white/60 p-2 rounded border border-amber-200/50 font-mono">
+                    <strong>Rastreio Provisório:</strong> PM-{produto.id}-BR
+                  </div>
                 </div>
-                <button 
-                  onClick={() => setActiveVideo(produto.videoAulaUrl)}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-[#0F3D2E] text-white hover:bg-[#0B2E23] rounded-lg text-xs font-bold transition-all shadow-xs"
-                >
-                  <Play className="w-3 h-3 fill-white" /> Assistir
-                </button>
-              </div>
+              ) : (
+                <>
+                  {/* Curso elements: Video */}
+                  {(produto.tipo === 'Curso' || !produto.tipo) && (
+                    <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl border border-gray-100">
+                      <div className="flex items-center gap-2">
+                        <Video className="w-4 h-4 text-gray-400" />
+                        <span className="text-xs font-bold text-gray-700">Vídeo-Aula do Método</span>
+                      </div>
+                      <button 
+                        onClick={() => setActiveVideo(produto.videoAulaUrl)}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-[#0F3D2E] text-white hover:bg-[#0B2E23] rounded-lg text-xs font-bold transition-all shadow-xs"
+                      >
+                        <Play className="w-3 h-3 fill-white" /> Assistir
+                      </button>
+                    </div>
+                  )}
 
-              <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-gray-400" />
-                  <span className="text-xs font-bold text-gray-700 truncate max-w-[160px]">{produto.pdfMaterialNome}</span>
-                </div>
-                {/* Simulated download */}
-                <a 
-                  href={`/assets/${produto.pdfMaterialNome}`}
-                  download
-                  onClick={(e) => {
-                    e.preventDefault();
-                    alert(`Download iniciado: ${produto.pdfMaterialNome}`);
-                  }}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-[#E5C384]/20 hover:bg-[#E5C384]/30 text-[#0F3D2E] rounded-lg text-xs font-bold transition-all"
-                >
-                  <Download className="w-3.5 h-3.5" /> Baixar PDF
-                </a>
-              </div>
+                  {/* Digital/Curso elements: E-book */}
+                  {(produto.tipo === 'Curso' || produto.tipo === 'Digital' || !produto.tipo) && (
+                    <div className="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl border border-gray-100">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-gray-400" />
+                        <span className="text-xs font-bold text-gray-700 truncate max-w-[160px]">{produto.pdfMaterialNome}</span>
+                      </div>
+                      <a 
+                        href={`/assets/${produto.pdfMaterialNome}`}
+                        download
+                        onClick={(e) => {
+                          e.preventDefault();
+                          alert(`Download iniciado: ${produto.pdfMaterialNome}`);
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-[#E5C384]/20 hover:bg-[#E5C384]/30 text-[#0F3D2E] rounded-lg text-xs font-bold transition-all"
+                      >
+                        <Download className="w-3.5 h-3.5" /> Baixar PDF
+                      </a>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
           </div>

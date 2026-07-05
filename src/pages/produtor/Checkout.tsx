@@ -1,4 +1,4 @@
-import { Monitor, Smartphone, Settings2, CheckCircle, Video, LayoutTemplate, X, Mail, MessageSquare, ShieldCheck, CreditCard, QrCode, FileText } from 'lucide-react';
+import { Monitor, Smartphone, Settings2, CheckCircle, Video, LayoutTemplate, X, Mail, MessageSquare, ShieldCheck, CreditCard, QrCode, FileText, Truck, MapPin } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchApi, postApi } from '../../utils/api';
@@ -34,11 +34,13 @@ export default function Checkout() {
   const [checkoutSucessoInfo, setCheckoutSucessoInfo] = useState<any>(null);
   
   const [selectedProductData, setSelectedProductData] = useState<any>(null);
+  const [produtosList, setProdutosList] = useState<any[]>([]);
 
   useEffect(() => {
     const loadProductData = async () => {
       try {
         const data = await fetchApi<any[]>('/api/produtos');
+        setProdutosList(data);
         if (slug) {
           // Find the product whose linkAfiliado contains the slug
           const found = data.find(p => p.linkAfiliado && p.linkAfiliado.includes(slug));
@@ -52,6 +54,8 @@ export default function Checkout() {
               setSelectedProductData(foundPrefix);
             }
           }
+        } else if (data.length > 0) {
+          setSelectedProductData(data[0]);
         }
       } catch (err) {
         console.error('Erro ao carregar dados do produto para checkout:', err);
@@ -193,9 +197,17 @@ export default function Checkout() {
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#1A1A1A]">Produto</label>
-              <select className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5C384]">
-                <option>Método Milionário Cristão</option>
-                <option>Jornada da Prosperidade</option>
+              <select 
+                value={selectedProductData?.id || ''}
+                onChange={(e) => {
+                  const found = produtosList.find(p => p.id === parseInt(e.target.value));
+                  if (found) setSelectedProductData(found);
+                }}
+                className="w-full px-4 py-3 border border-[#E5E7EB] text-[#1A1A1A] bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5C384] text-sm"
+              >
+                {produtosList.map(p => (
+                  <option key={p.id} value={p.id}>{p.nome}</option>
+                ))}
               </select>
             </div>
 
@@ -326,21 +338,38 @@ export default function Checkout() {
                  {/* Lado Esquerdo: Persuasão (Vídeo, Texto, Prova Social) */}
                  <div className={`${previewMode === 'mobile' ? 'col-span-1' : 'lg:col-span-3'} space-y-6 lg:space-y-8`}>
                    
-                   {/* Vídeo */}
-                   {videoUrl ? (
-                     <div className="w-full aspect-video bg-black rounded-xl shadow-lg flex items-center justify-center overflow-hidden relative group">
-                       <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop" alt="Thumbnail" className="absolute inset-0 w-full h-full object-cover opacity-60" />
-                       <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center z-10 shadow-xl group-hover:scale-110 transition-transform cursor-pointer">
-                         <div className="w-0 h-0 border-t-8 border-t-transparent border-l-[14px] border-l-white border-b-8 border-b-transparent ml-1"></div>
-                       </div>
+                   {/* Mídia Dinâmica dependendo do tipo de produto */}
+                   {selectedProductData?.tipo === 'Físico' ? (
+                     <div className="w-full p-6 text-white rounded-xl shadow-lg flex flex-col items-center justify-center text-center transition-colors duration-300" style={{ backgroundColor: corPrincipal }}>
+                       <Truck className="w-12 h-12 text-[#E5C384] mb-3 animate-bounce" />
+                       <h4 className="font-bold text-lg text-[#E5C384]">Entrega Física com Frete Rápido</h4>
+                       <p className="text-xs text-gray-200 mt-1 max-w-sm">Você receberá o produto no seu endereço de entrega informado abaixo. Código de rastreio dos Correios ou Transportadora enviado via WhatsApp.</p>
+                       <span className="mt-4 px-3 py-1 bg-white/10 rounded-full text-[10px] uppercase font-bold tracking-widest text-[#E5C384]">Envio Seguro & Rastreável</span>
+                     </div>
+                   ) : selectedProductData?.tipo === 'Digital' ? (
+                     <div className="w-full p-6 text-white rounded-xl shadow-lg flex flex-col items-center justify-center text-center transition-colors duration-300" style={{ backgroundColor: corPrincipal }}>
+                       <FileText className="w-12 h-12 text-[#E5C384] mb-3" />
+                       <h4 className="font-bold text-lg text-[#E5C384]">Entrega Digital Instantânea</h4>
+                       <p className="text-xs text-gray-200 mt-1 max-w-sm">Liberamos o material digital / PDF imediatamente na sua área de membros após a aprovação do seu pagamento.</p>
+                       <span className="mt-4 px-3 py-1 bg-white/10 rounded-full text-[10px] uppercase font-bold tracking-widest text-[#E5C384]">Download Liberado</span>
                      </div>
                    ) : (
-                     <div className="w-full aspect-video bg-gray-200 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300">
-                       <div className="text-gray-400 flex flex-col items-center gap-2">
-                         <Video className="w-8 h-8" />
-                         <span className="text-sm font-bold">Sem vídeo configurado</span>
+                     /* Curso / Outros */
+                     videoUrl ? (
+                       <div className="w-full aspect-video bg-black rounded-xl shadow-lg flex items-center justify-center overflow-hidden relative group">
+                         <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop" alt="Thumbnail" className="absolute inset-0 w-full h-full object-cover opacity-60" />
+                         <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center z-10 shadow-xl group-hover:scale-110 transition-transform cursor-pointer">
+                           <div className="w-0 h-0 border-t-8 border-t-transparent border-l-[14px] border-l-white border-b-8 border-b-transparent ml-1"></div>
+                         </div>
                        </div>
-                     </div>
+                     ) : (
+                       <div className="w-full aspect-video bg-gray-200 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300">
+                         <div className="text-gray-400 flex flex-col items-center gap-2">
+                           <Video className="w-8 h-8" />
+                           <span className="text-sm font-bold">Sem vídeo configurado</span>
+                         </div>
+                       </div>
+                     )
                    )}
 
                    {/* Texto Persuasivo */}
@@ -411,6 +440,48 @@ export default function Checkout() {
                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-[#E5C384] focus:outline-none"
                        />
                      </div>
+                      
+                     {selectedProductData?.tipo === 'Físico' && (
+                       <div className="space-y-3 animate-in fade-in duration-300">
+                         <h3 className="font-bold text-[#1A1A1A] border-b border-gray-100 pb-3 pt-2 flex items-center gap-1.5">
+                           <MapPin className="w-3.5 h-3.5 text-gray-400" /> Endereço de Entrega
+                         </h3>
+                         <input 
+                           type="text"
+                           required
+                           placeholder="CEP (ex: 01001-000)"
+                           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-[#E5C384] focus:outline-none"
+                         />
+                         <div className="grid grid-cols-3 gap-2">
+                           <input 
+                             type="text"
+                             required
+                             placeholder="Rua / Avenida"
+                             className="col-span-2 w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-[#E5C384] focus:outline-none"
+                           />
+                           <input 
+                             type="text"
+                             required
+                             placeholder="Número"
+                             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-[#E5C384] focus:outline-none"
+                           />
+                         </div>
+                         <div className="grid grid-cols-2 gap-2">
+                           <input 
+                             type="text"
+                             required
+                             placeholder="Cidade"
+                             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-[#E5C384] focus:outline-none"
+                           />
+                           <input 
+                             type="text"
+                             required
+                             placeholder="Estado (UF)"
+                             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-[#E5C384] focus:outline-none"
+                           />
+                         </div>
+                       </div>
+                     )}
                      
                      <h3 className="font-bold text-[#1A1A1A] border-b border-gray-100 pb-3 pt-2">Forma de Pagamento</h3>
                      

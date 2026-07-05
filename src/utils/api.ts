@@ -135,7 +135,8 @@ export async function postApi<T>(url: string, body: any): Promise<{ success: boo
         status: 'Ativo',
         linkAfiliado: `https://plataforma.com/inv/${body.nome.toLowerCase().replace(/\s+/g, '-').substring(0, 10)}-${Math.floor(Math.random() * 10000)}`,
         videoAulaUrl: body.videoAulaUrl || 'https://vimeo.com/83918239',
-        pdfMaterialNome: body.pdfMaterialNome || `${body.nome.toLowerCase().replace(/\s+/g, '-')}-ebook.pdf`
+        pdfMaterialNome: body.pdfMaterialNome || `${body.nome.toLowerCase().replace(/\s+/g, '-')}-ebook.pdf`,
+        tipo: body.tipo || 'Curso'
       };
       db.produtos.unshift(newProduct);
       saveLocalDB(db);
@@ -255,7 +256,8 @@ export async function putApi(url: string, body: any): Promise<{ success: boolean
               comissao: String(body.comissao).includes('%') ? body.comissao : `${body.comissao}%`, 
               status: body.status,
               videoAulaUrl: body.videoAulaUrl,
-              pdfMaterialNome: body.pdfMaterialNome
+              pdfMaterialNome: body.pdfMaterialNome,
+              tipo: body.tipo || p.tipo || 'Curso'
             } 
           : p
       );
