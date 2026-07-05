@@ -277,12 +277,18 @@ app.post('/api/checkout/pay', async (req, res) => {
   ) || 97.00;
 
   const ASAAS_KEY = process.env.ASAAS_API_KEY;
-  const ASAAS_URL = process.env.ASAAS_API_URL || 'https://sandbox.asaas.com/api';
+  let ASAAS_URL = 'https://sandbox.asaas.com/v3';
+  if (ASAAS_KEY && (ASAAS_KEY.startsWith('$aact_prod_') || ASAAS_KEY.includes('prod'))) {
+    ASAAS_URL = 'https://api.asaas.com/v3';
+  }
+  if (process.env.ASAAS_API_URL) {
+    ASAAS_URL = process.env.ASAAS_API_URL;
+  }
 
   if (ASAAS_KEY) {
     try {
       // 1. Register or get customer
-      const customerRes = await fetch(`${ASAAS_URL}/v3/customers`, {
+      const customerRes = await fetch(`${ASAAS_URL}/customers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -304,7 +310,7 @@ app.post('/api/checkout/pay', async (req, res) => {
       const customerId = customerData.id;
 
       // 2. Create dynamic PIX charge
-      const paymentRes = await fetch(`${ASAAS_URL}/v3/payments`, {
+      const paymentRes = await fetch(`${ASAAS_URL}/payments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -332,7 +338,7 @@ app.post('/api/checkout/pay', async (req, res) => {
       let pixKey = '';
 
       if (metodo !== 'Cartão de Crédito') {
-        const pixRes = await fetch(`${ASAAS_URL}/v3/payments/${paymentId}/pixQrCode`, {
+        const pixRes = await fetch(`${ASAAS_URL}/payments/${paymentId}/pixQrCode`, {
           method: 'GET',
           headers: {
             'access_token': ASAAS_KEY
