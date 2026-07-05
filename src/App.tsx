@@ -43,8 +43,10 @@ export default function App() {
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/recuperar-senha" element={<RecuperarSenha />} />
         
-        {/* Public Checkout Link Route */}
+        {/* Public Checkout Link Routes */}
         <Route path="/inv/:slug" element={<Checkout />} />
+        <Route path="/p/:slug" element={<Checkout />} />
+        <Route path="/c/:slug" element={<Checkout />} />
         
         {/* Role Selector */}
         <Route path="/painel" element={<PainelPrincipal />} />

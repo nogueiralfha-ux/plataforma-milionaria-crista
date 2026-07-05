@@ -7,11 +7,12 @@ export default function QRCodeAfiliado() {
   const [bgColor, setBgColor] = useState('#0F3D2E');
   const [textColor, setTextColor] = useState('#E5C384');
   const [copied, setCopied] = useState(false);
+  const [refTag, setRefTag] = useState('AF88291');
 
   const productLinks: { [key: string]: string } = {
-    'Método Milionário Cristão': 'https://plataforma.com/p/mmc?ref=AF88291',
-    'Jornada da Prosperidade': 'https://plataforma.com/p/jdp?ref=AF88291',
-    'Fórmula das Vendas Bíblicas': 'https://plataforma.com/p/fvb?ref=AF88291'
+    'Método Milionário Cristão': `https://plataforma.com/p/mmc?ref=${refTag}`,
+    'Jornada da Prosperidade': `https://plataforma.com/p/jdp?ref=${refTag}`,
+    'Fórmula das Vendas Bíblicas': `https://plataforma.com/p/fvb?ref=${refTag}`
   };
 
   const verses = [
@@ -65,6 +66,17 @@ export default function QRCodeAfiliado() {
                   <option key={prod} value={prod}>{prod}</option>
                 ))}
               </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Identificador Personalizado (Ref)</label>
+              <input 
+                type="text" 
+                value={refTag}
+                onChange={(e) => setRefTag(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                placeholder="Ex: antonionogueira"
+                className="w-full px-4 py-3 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5C384] text-sm font-bold text-[#0F3D2E]"
+              />
             </div>
 
             <div className="space-y-2">

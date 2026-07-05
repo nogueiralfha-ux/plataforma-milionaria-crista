@@ -3,13 +3,14 @@ import { useState } from 'react';
 
 export default function MeusLinks() {
   const [copiedLink, setCopiedLink] = useState<number | null>(null);
+  const [refTag, setRefTag] = useState('AF88291');
 
   const links = [
     {
       id: 1,
       produto: 'Método Milionário Cristão',
       tipo: 'Página de Vendas',
-      url: 'https://plataforma.com/p/mmc?ref=AF88291',
+      url: `https://plataforma.com/p/mmc?ref=${refTag}`,
       cliques: 342,
       vendas: 12
     },
@@ -17,7 +18,7 @@ export default function MeusLinks() {
       id: 2,
       produto: 'Método Milionário Cristão',
       tipo: 'Checkout Direto',
-      url: 'https://plataforma.com/c/mmc?ref=AF88291',
+      url: `https://plataforma.com/c/mmc?ref=${refTag}`,
       cliques: 156,
       vendas: 8
     },
@@ -25,7 +26,7 @@ export default function MeusLinks() {
       id: 3,
       produto: 'Jornada da Prosperidade',
       tipo: 'Página de Vendas',
-      url: 'https://plataforma.com/p/jdp?ref=AF88291',
+      url: `https://plataforma.com/p/jdp?ref=${refTag}`,
       cliques: 89,
       vendas: 1
     }
@@ -53,6 +54,21 @@ export default function MeusLinks() {
           <Filter className="w-5 h-5 mr-2" />
           Filtrar
         </button>
+      </div>
+
+      {/* Personalização do Link */}
+      <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm max-w-md space-y-2">
+        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Identificador de Vendas Personalizado (Ref/Slug)</label>
+        <div className="flex gap-2">
+          <input 
+            type="text" 
+            value={refTag}
+            onChange={(e) => setRefTag(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+            placeholder="Ex: antonionogueira"
+            className="flex-1 px-4 py-2.5 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5C384] text-sm font-bold text-[#0F3D2E]"
+          />
+        </div>
+        <p className="text-[10px] text-gray-400">Personalize o código final dos seus links de afiliado. Substitua os números por uma palavra ou seu nome.</p>
       </div>
 
       <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
