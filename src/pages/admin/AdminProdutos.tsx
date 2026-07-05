@@ -1,22 +1,62 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, ShieldAlert, Award } from 'lucide-react';
+import { fetchApi, putApi } from '../../utils/api';
 
 export default function AdminProdutos() {
-  const [products, setProducts] = useState([
-    { id: 1, nome: 'Método Milionário Cristão', produtor: 'Pr. Gabriel Santos', preco: 'R$ 997,00', comissao: '50%', status: 'Ativo' },
-    { id: 2, nome: 'Jornada da Prosperidade', produtor: 'Samuel Barboza', preco: 'R$ 497,00', comissao: '40%', status: 'Ativo' },
-    { id: 3, nome: 'Fórmula das Vendas Bíblicas', produtor: 'Mateus Albuquerque', preco: 'R$ 97,00', comissao: '50%', status: 'Pendente' },
-    { id: 4, nome: 'O Código de Salomão', produtor: 'Caleb Oliveira', preco: 'R$ 297,00', comissao: '60%', status: 'Pendente' }
-  ]);
+  const [products, setProducts] = useState<any[]>([]);
 
-  const handleApprove = (id: number) => {
-    const updated = products.map(p => p.id === id ? { ...p, status: 'Ativo' } : p);
-    setProducts(updated);
+  const fetchProducts = async () => {
+    try {
+      const data = await fetchApi<any[]>('/api/produtos');
+      // Keep support for both structure kinds (frontend expects 'produtor' property, backend may have default/owner name)
+      const mapped = data.map((p: any) => ({
+        ...p,
+        produtor: p.produtor || 'Pr. Gabriel Santos'
+      }));
+      setProducts(mapped);
+    } catch (err) {
+      console.error('Erro ao buscar produtos:', err);
+    }
   };
 
-  const handleReject = (id: number) => {
-    const updated = products.map(p => p.id === id ? { ...p, status: 'Recusado' } : p);
-    setProducts(updated);
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const handleApprove = async (id: number) => {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+    try {
+      const data = await putApi(`/api/produtos/${id}`, {
+        ...product,
+        status: 'Ativo'
+      });
+      if (data.success) {
+        fetchProducts();
+      } else {
+        alert('Erro ao aprovar produto.');
+      }
+    } catch (err) {
+      alert('Erro de conexão com o servidor.');
+    }
+  };
+
+  const handleReject = async (id: number) => {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+    try {
+      const data = await putApi(`/api/produtos/${id}`, {
+        ...product,
+        status: 'Recusado'
+      });
+      if (data.success) {
+        fetchProducts();
+      } else {
+        alert('Erro ao rejeitar produto.');
+      }
+    } catch (err) {
+      alert('Erro de conexão com o servidor.');
+    }
   };
 
   return (

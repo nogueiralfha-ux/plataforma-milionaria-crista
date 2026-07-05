@@ -1,6 +1,8 @@
+import React, { useState, useRef } from 'react';
 import { Save, Image as ImageIcon, CheckCircle, X, Video, FileText } from 'lucide-react';
-import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { postApi } from '../../utils/api';
+
 
 export default function CriarProduto() {
   const navigate = useNavigate();
@@ -48,14 +50,7 @@ export default function CriarProduto() {
     setSalvando(true);
     
     try {
-      const response = await fetch('/api/produtos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ nome, preco, comissao, videoAulaUrl, pdfMaterialNome })
-      });
-      const data = await response.json();
+      const data = await postApi('/api/produtos', { nome, preco, comissao, videoAulaUrl, pdfMaterialNome });
       if (data.success) {
         setSalvando(false);
         setSucesso(true);

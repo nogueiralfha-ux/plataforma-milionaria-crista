@@ -1,24 +1,49 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Save, CheckCircle, Database } from 'lucide-react';
+import { fetchApi, putApi } from '../../utils/api';
+
 
 export default function AdminConfiguracoes() {
-  const [siteName, setSiteName] = useState('Plataforma Milionária Cristã');
-  const [fee, setFee] = useState('10');
-  const [supportEmail, setSupportEmail] = useState('suporte@plataformamilionariacrista.com');
+  const [siteName, setSiteName] = useState('');
+  const [fee, setFee] = useState('');
+  const [supportEmail, setSupportEmail] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchConfigs = async () => {
+      try {
+        const data = await fetchApi<any>('/api/configuracoes');
+        if (data) {
+          setSiteName(data.siteName || 'Plataforma Milionária Cristã');
+          setFee(data.fee || '10');
+          setSupportEmail(data.supportEmail || 'suporte@plataformamilionariacrista.com');
+        }
+      } catch (err) {
+        console.error('Erro ao carregar configurações:', err);
+      }
+    };
+    fetchConfigs();
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSalvando(true);
     setSucesso(false);
 
-    // Simulate saving settings
-    setTimeout(() => {
+    try {
+      const data = await putApi('/api/configuracoes', { siteName, fee, supportEmail });
+      if (data.success) {
+        setSucesso(true);
+        setTimeout(() => setSucesso(false), 3000);
+      } else {
+        alert('Erro ao salvar configurações.');
+      }
+    } catch (err) {
+      alert('Erro de conexão.');
+    } finally {
       setSalvando(false);
-      setSucesso(true);
-      setTimeout(() => setSucesso(false), 3000);
-    }, 1500);
+    }
   };
 
   return (

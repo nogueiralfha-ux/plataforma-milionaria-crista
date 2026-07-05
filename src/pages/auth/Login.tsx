@@ -1,6 +1,7 @@
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
+
 
 export default function Login() {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ export default function Login() {
     if (email === 'nogueiralfha@gmail.com' && password === 'missionario405') {
       const adminUser = {
         email: 'nogueiralfha@gmail.com',
-        nome: 'Pr. Nogueira',
+        nome: 'antonio luiz socorro nogueira',
         superAdmin: true,
         role: 'admin'
       };

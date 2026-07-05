@@ -1,6 +1,8 @@
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { PlusCircle, Edit, MoreVertical, Copy, X, Save, Video, FileText } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { fetchApi, putApi } from '../../utils/api';
+
 
 export default function Produtos() {
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
@@ -18,8 +20,7 @@ export default function Produtos() {
   
   const fetchProdutos = async () => {
     try {
-      const response = await fetch('/api/produtos');
-      const data = await response.json();
+      const data = await fetchApi<any[]>('/api/produtos');
       setProdutos(data);
     } catch (err) {
       console.error('Erro ao buscar produtos:', err);
@@ -52,21 +53,14 @@ export default function Produtos() {
     if (!selectedProduct) return;
 
     try {
-      const response = await fetch(`/api/produtos/${selectedProduct.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          nome: editNome,
-          preco: editPreco,
-          comissao: editComissao,
-          status: editStatus,
-          videoAulaUrl: editVideoAulaUrl,
-          pdfMaterialNome: editPdfMaterialNome
-        })
+      const data = await putApi(`/api/produtos/${selectedProduct.id}`, {
+        nome: editNome,
+        preco: editPreco,
+        comissao: editComissao,
+        status: editStatus,
+        videoAulaUrl: editVideoAulaUrl,
+        pdfMaterialNome: editPdfMaterialNome
       });
-      const data = await response.json();
       if (data.success) {
         fetchProdutos();
         setIsEditModalOpen(false);

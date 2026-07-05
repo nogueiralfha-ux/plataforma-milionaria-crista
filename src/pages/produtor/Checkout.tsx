@@ -1,5 +1,6 @@
 import { Monitor, Smartphone, Settings2, CheckCircle, Video, LayoutTemplate, X, Mail, MessageSquare, ShieldCheck, CreditCard, QrCode, FileText } from 'lucide-react';
 import { useState } from 'react';
+import { postApi } from '../../utils/api';
 
 export default function Checkout() {
   const [salvando, setSalvando] = useState(false);
@@ -58,29 +59,19 @@ export default function Checkout() {
 
     try {
       // 1. Initiate purchase (creates order on backend)
-      const payResponse = await fetch('/api/checkout/pay', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          compradorNome,
-          compradorEmail,
-          compradorTel,
-          produtoNome: 'Método Milionário Cristão',
-          valor: 'R$ 97,00',
-          metodo: readableMetodo
-        })
+      const payData = await postApi('/api/checkout/pay', {
+        compradorNome,
+        compradorEmail,
+        compradorTel,
+        produtoNome: 'Método Milionário Cristão',
+        valor: 'R$ 97,00',
+        metodo: readableMetodo
       });
-      const payData = await payResponse.json();
 
       if (payData.success) {
         // If card or PIX, simulate instant webhook approval
         if (metodoPagamento !== 'boleto') {
-          const webhookResponse = await fetch('/api/checkout/webhook', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: payData.orderId })
-          });
-          const webhookData = await webhookResponse.json();
+          const webhookData = await postApi('/api/checkout/webhook', { orderId: payData.orderId });
 
           if (webhookData.success) {
             setCheckoutSucessoInfo({
@@ -123,12 +114,7 @@ export default function Checkout() {
 
   const handleConfirmBoletoPayment = async (orderId: string) => {
     try {
-      const response = await fetch('/api/checkout/webhook', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId })
-      });
-      const data = await response.json();
+      const data = await postApi('/api/checkout/webhook', { orderId });
       if (data.success) {
         setCheckoutSucessoInfo((prev: any) => ({
           ...prev,

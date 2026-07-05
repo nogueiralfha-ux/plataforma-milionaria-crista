@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, Video, FileText, Download, Play, CheckCircle } from 'lucide-react';
+import { fetchApi } from '../../utils/api';
 
 type Adquirido = {
   id: number;
@@ -28,8 +29,7 @@ export default function Biblioteca() {
   useEffect(() => {
     const fetchBiblioteca = async () => {
       try {
-        const response = await fetch('/api/cliente/biblioteca');
-        const data = await response.json();
+        const data = await fetchApi<Adquirido[]>('/api/cliente/biblioteca');
         setProdutos(data);
       } catch (err) {
         console.error('Erro ao buscar biblioteca:', err);

@@ -1,24 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DollarSign, CheckCircle, RefreshCw, XCircle, Landmark } from 'lucide-react';
+import { fetchApi, putApi } from '../../utils/api';
 
 export default function AdminComissoes() {
-  const [saques, setSaques] = useState([
-    { id: 'SQ-9932', nome: 'Ana Paula Vasconcelos', chave: 'anapaula@gmail.com', valor: 450.00, data: '03/07/2026', status: 'Pendente' },
-    { id: 'SQ-9931', nome: 'João Lucas Teixeira', chave: '000.111.222-33', valor: 1250.00, data: '02/07/2026', status: 'Pendente' },
-    { id: 'SQ-9921', nome: 'Pr. Gabriel Santos', chave: 'gabriel@gmail.com', valor: 850.00, data: '18/06/2026', status: 'Pago' }
-  ]);
-
+  const [saques, setSaques] = useState<any[]>([]);
   const [processandoId, setProcessandoId] = useState<string | null>(null);
 
-  const handleApproveSaque = (id: string) => {
+  const fetchSaques = async () => {
+    try {
+      const data = await fetchApi<any[]>('/api/saques');
+      setSaques(data);
+    } catch (err) {
+      console.error('Erro ao buscar saques:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchSaques();
+  }, []);
+
+  const handleApproveSaque = async (id: string) => {
     setProcessandoId(id);
     
-    // Simulate PIX bank transfer
-    setTimeout(() => {
-      const updated = saques.map(s => s.id === id ? { ...s, status: 'Pago' } : s);
-      setSaques(updated);
+    try {
+      const data = await putApi(`/api/saques/${id}/status`, { status: 'Pago' });
+      if (data.success) {
+        fetchSaques();
+      } else {
+        alert('Erro ao autorizar saque.');
+      }
+    } catch (err) {
+      alert('Erro ao conectar com o servidor.');
+    } finally {
       setProcessandoId(null);
-    }, 1500);
+    }
   };
 
   return (

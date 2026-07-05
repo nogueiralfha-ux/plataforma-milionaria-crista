@@ -1,48 +1,137 @@
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AlertCircle, CheckCircle } from 'lucide-react';
+
 
 export default function Cadastro() {
+  const navigate = useNavigate();
+  const [nome, setNome] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState('Cliente');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(false);
+
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ nome, email, password, role })
+      });
+
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setSuccess(true);
+        localStorage.setItem('current_user', JSON.stringify(data.user));
+        setTimeout(() => {
+          navigate('/painel');
+        }, 1500);
+      } else {
+        setError(data.error || 'Erro ao realizar cadastro.');
+      }
+    } catch (err) {
+      setError('Erro de conexão com o servidor.');
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB] font-sans text-[#1A1A1A] py-12 px-4 sm:px-6 lg:px-8 animate-in fade-in duration-500">
+      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-lg border border-[#E5E7EB]">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <div className="mx-auto w-12 h-12 rounded-xl bg-[#0F3D2E] flex items-center justify-center font-bold text-[#E5C384] text-lg shadow-md mb-2">
+            MC
+          </div>
+          <h2 className="text-center text-3xl font-serif font-black italic tracking-tighter text-[#0F3D2E]">
             Crie sua conta
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Já tem uma conta?{' '}
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-              Faça login
-            </Link>
+          <p className="mt-2 text-center text-xs text-gray-500 uppercase tracking-widest font-bold">
+            Junte-se à Plataforma Milionária Cristã
           </p>
         </div>
-        <form className="mt-8 space-y-6" action="#" method="POST">
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="name" className="sr-only">Nome Completo</label>
-              <input id="name" name="name" type="text" required className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" placeholder="Nome Completo" />
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl flex items-start gap-2.5 text-xs font-semibold">
+            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+            <p>{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl flex items-start gap-2.5 text-xs font-semibold">
+            <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <p>Cadastro realizado com sucesso! Redirecionando...</p>
+          </div>
+        )}
+
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm space-y-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Nome Completo</label>
+              <input 
+                type="text" 
+                required 
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                className="appearance-none relative block w-full px-4 py-3 border border-[#E5E7EB] placeholder-gray-400 text-[#1A1A1A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5C384] focus:border-[#E5C384] text-sm transition-all" 
+                placeholder="Seu nome" 
+              />
             </div>
-            <div>
-              <label htmlFor="email-address" className="sr-only">Endereço de Email</label>
-              <input id="email-address" name="email" type="email" autoComplete="email" required className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" placeholder="Endereço de Email" />
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Endereço de E-mail</label>
+              <input 
+                type="email" 
+                required 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="appearance-none relative block w-full px-4 py-3 border border-[#E5E7EB] placeholder-gray-400 text-[#1A1A1A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5C384] focus:border-[#E5C384] text-sm transition-all" 
+                placeholder="exemplo@gmail.com" 
+              />
             </div>
-            <div>
-              <label htmlFor="password" className="sr-only">Senha</label>
-              <input id="password" name="password" type="password" required className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" placeholder="Senha" />
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Senha de Acesso</label>
+              <input 
+                type="password" 
+                required 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="appearance-none relative block w-full px-4 py-3 border border-[#E5E7EB] placeholder-gray-400 text-[#1A1A1A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5C384] focus:border-[#E5C384] text-sm transition-all" 
+                placeholder="Crie uma senha" 
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Tipo de Conta</label>
+              <select 
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="appearance-none relative block w-full px-4 py-3 border border-[#E5E7EB] text-[#1A1A1A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E5C384] focus:border-[#E5C384] text-sm bg-white transition-all"
+              >
+                <option value="Cliente">Cliente</option>
+                <option value="Afiliado">Afiliado</option>
+                <option value="Produtor">Produtor</option>
+              </select>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Conta</label>
-            <select className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border">
-              <option>Cliente</option>
-              <option>Afiliado</option>
-              <option>Produtor</option>
-            </select>
-          </div>
-
-          <div>
-            <Link to="/painel" className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <button 
+              type="submit"
+              className="w-full flex items-center justify-center px-8 py-3.5 border border-transparent text-sm font-bold uppercase tracking-widest rounded-xl text-[#0F3D2E] bg-[#E5C384] hover:bg-[#D4B373] shadow-lg transition-colors cursor-pointer"
+            >
               Cadastrar
+            </button>
+          </div>
+
+          <div className="text-center text-xs text-gray-500 uppercase tracking-wider font-bold">
+            Já tem uma conta?{' '}
+            <Link to="/login" className="text-[#0F3D2E] hover:text-[#E5C384] transition-colors">
+              Faça Login
             </Link>
           </div>
         </form>
@@ -50,3 +139,4 @@ export default function Cadastro() {
     </div>
   );
 }
+

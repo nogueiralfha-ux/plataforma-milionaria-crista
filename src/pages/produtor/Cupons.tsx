@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlusCircle, Ticket, Trash2, CheckCircle, RefreshCw } from 'lucide-react';
+
 
 type Cupom = {
   id: number;

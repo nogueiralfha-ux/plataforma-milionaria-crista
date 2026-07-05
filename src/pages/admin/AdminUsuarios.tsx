@@ -1,25 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Users, Search, Ban, CheckCircle, ShieldCheck } from 'lucide-react';
+import { fetchApi, putApi } from '../../utils/api';
 
 export default function AdminUsuarios() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [users, setUsers] = useState([
-    { id: 1, nome: 'Pr. Gabriel Santos', email: 'gabriel.santos@gmail.com', role: 'Produtor', status: 'Ativo' },
-    { id: 2, nome: 'Ana Paula Vasconcelos', email: 'anapaula@gmail.com', role: 'Afiliado', status: 'Ativo' },
-    { id: 3, nome: 'João Lucas Teixeira', email: 'joao.lucas@gmail.com', role: 'Afiliado', status: 'Pendente' },
-    { id: 4, nome: 'Ruth Fonseca', email: 'ruth.fonseca@gmail.com', role: 'Cliente', status: 'Ativo' },
-    { id: 5, nome: 'Mateus Albuquerque', email: 'mateus.a@gmail.com', role: 'Produtor', status: 'Banido' }
-  ]);
+  const [users, setUsers] = useState<any[]>([]);
 
-  const handleToggleStatus = (id: number) => {
-    const updated = users.map(user => {
-      if (user.id === id) {
-        const nextStatus = user.status === 'Ativo' ? 'Banido' : 'Ativo';
-        return { ...user, status: nextStatus };
+  const fetchUsers = async () => {
+    try {
+      const data = await fetchApi<any[]>('/api/usuarios');
+      setUsers(data);
+    } catch (err) {
+      console.error('Erro ao buscar usuários:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleToggleStatus = async (id: number) => {
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+    const nextStatus = user.status === 'Ativo' ? 'Banido' : 'Ativo';
+    
+    try {
+      const data = await putApi(`/api/usuarios/${id}/status`, { status: nextStatus });
+      if (data.success) {
+        fetchUsers();
+      } else {
+        alert('Erro ao atualizar status do usuário.');
       }
-      return user;
-    });
-    setUsers(updated);
+    } catch (err) {
+      alert('Erro ao conectar com o servidor.');
+    }
   };
 
   const filtered = users.filter(u => 

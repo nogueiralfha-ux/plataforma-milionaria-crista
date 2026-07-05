@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Wallet, CheckCircle, RefreshCw, Landmark, ArrowUpRight } from 'lucide-react';
+import { fetchApi, postApi } from '../../utils/api';
+
 
 export default function SolicitarSaque() {
   const [solicitando, setSolicitando] = useState(false);
@@ -9,13 +11,31 @@ export default function SolicitarSaque() {
   const [valorSaque, setValorSaque] = useState('');
 
   const [availableBalance, setAvailableBalance] = useState(2450.00);
+  const [saquesAntigos, setSaquesAntigos] = useState<any[]>([]);
 
-  const saquesAntigos = [
-    { id: 'SQ-9921', valor: 850.00, data: '18/06/2026', banco: 'Mercado Pago (PIX)', status: 'Pago' },
-    { id: 'SQ-9901', valor: 1400.00, data: '05/06/2026', banco: 'Banco Inter (PIX)', status: 'Pago' }
-  ];
+  const fetchSaques = async () => {
+    try {
+      const data = await fetchApi<any[]>('/api/saques');
+      
+      // Calculate remaining balance dynamically starting from initial 2450.00 minus any saques in DB
+      let withdrawn = 0;
+      data.forEach((s: any) => {
+        if (s.status === 'Pago' || s.status === 'Pendente') {
+          withdrawn += s.valor;
+        }
+      });
+      setAvailableBalance(2450.00 - withdrawn);
+      setSaquesAntigos(data);
+    } catch (err) {
+      console.error('Erro ao carregar saques:', err);
+    }
+  };
 
-  const handleWithdraw = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchSaques();
+  }, []);
+
+  const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     const valor = parseFloat(valorSaque);
     if (isNaN(valor) || valor <= 0 || valor > availableBalance) {
@@ -26,17 +46,33 @@ export default function SolicitarSaque() {
     setSolicitando(true);
     setSucesso(false);
 
-    // Simulate transfer API
-    setTimeout(() => {
-      setAvailableBalance(prev => prev - valor);
+    try {
+      const currentUserString = localStorage.getItem('current_user');
+      const currentUser = currentUserString ? JSON.parse(currentUserString) : null;
+      const nome = currentUser?.nome || 'antonio luiz socorro nogueira';
+
+      const data = await postApi('/api/saques', {
+        valor,
+        chave: pixKey,
+        nome,
+        banco: 'Transferência PIX'
+      });
+      if (data.success) {
+        setSucesso(true);
+        setValorSaque('');
+        setPixKey('');
+        fetchSaques();
+        setTimeout(() => {
+          setSucesso(false);
+        }, 4000);
+      } else {
+        alert('Erro ao solicitar saque.');
+      }
+    } catch (err) {
+      alert('Erro de conexão com o servidor.');
+    } finally {
       setSolicitando(false);
-      setSucesso(true);
-      setValorSaque('');
-      
-      setTimeout(() => {
-        setSucesso(false);
-      }, 4000);
-    }, 2000);
+    }
   };
 
   return (

@@ -106,6 +106,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const currentUserString = localStorage.getItem('current_user');
   const currentUser = currentUserString ? JSON.parse(currentUserString) : null;
   const isSuperAdmin = currentUser?.email === 'nogueiralfha@gmail.com';
+  const displayNome = currentUser?.nome || 'antonio luiz socorro nogueira';
+  const displayRoleName = currentUser?.role === 'admin' || isSuperAdmin ? 'Administrador Geral' : (currentUser?.role || 'Usuário');
+  
+  const getUserInitials = (name: string) => {
+    if (!name) return 'AN';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0].substring(0, 2).toUpperCase();
+  };
+  const initials = getUserInitials(displayNome);
 
   // Available roles for switcher
   const availableRoles = [
@@ -234,7 +246,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             )}
 
             <div className="w-8 h-8 rounded-full bg-[#E5C384] border border-[#0F3D2E]/20 flex items-center justify-center font-black text-[10px] text-[#0F3D2E]">
-              GS
+              {initials}
             </div>
           </div>
         </header>
@@ -273,11 +285,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               )}
             </div>
             <div className="text-right">
-              <p className="text-sm font-bold">Pr. Gabriel Santos</p>
-              <p className="text-[10px] text-gray-500 uppercase">Administrador Geral</p>
+              <p className="text-sm font-bold capitalize">{displayNome}</p>
+              <p className="text-[10px] text-gray-500 uppercase">{displayRoleName}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-[#E5C384] border-2 border-[#0F3D2E] flex items-center justify-center font-bold text-[#0F3D2E]">
-              GS
+              {initials}
             </div>
           </div>
         </header>
