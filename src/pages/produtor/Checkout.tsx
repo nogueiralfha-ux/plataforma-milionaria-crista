@@ -1,8 +1,12 @@
 import { Monitor, Smartphone, Settings2, CheckCircle, Video, LayoutTemplate, X, Mail, MessageSquare, ShieldCheck, CreditCard, QrCode, FileText } from 'lucide-react';
-import { useState } from 'react';
-import { postApi } from '../../utils/api';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { fetchApi, postApi } from '../../utils/api';
 
 export default function Checkout() {
+  const { slug } = useParams();
+  const isPublicCheckout = !!slug;
+
   const [salvando, setSalvando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
   
@@ -28,6 +32,36 @@ export default function Checkout() {
   const [cartaoCvv, setCartaoCvv] = useState('');
 
   const [checkoutSucessoInfo, setCheckoutSucessoInfo] = useState<any>(null);
+  
+  const [selectedProductData, setSelectedProductData] = useState<any>(null);
+
+  useEffect(() => {
+    const loadProductData = async () => {
+      try {
+        const data = await fetchApi<any[]>('/api/produtos');
+        if (slug) {
+          // Find the product whose linkAfiliado contains the slug
+          const found = data.find(p => p.linkAfiliado && p.linkAfiliado.includes(slug));
+          if (found) {
+            setSelectedProductData(found);
+          } else {
+            // Try matching prefix
+            const slugPrefix = slug.split('-')[0].toLowerCase();
+            const foundPrefix = data.find(p => p.nome.toLowerCase().includes(slugPrefix));
+            if (foundPrefix) {
+              setSelectedProductData(foundPrefix);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao carregar dados do produto para checkout:', err);
+      }
+    };
+    loadProductData();
+  }, [slug]);
+
+  const currentProductName = selectedProductData ? selectedProductData.nome : 'Método Milionário Cristão';
+  const currentProductPrice = selectedProductData ? selectedProductData.preco : 'R$ 97,00';
   
   const handleSave = () => {
     setSalvando(true);
@@ -63,8 +97,8 @@ export default function Checkout() {
         compradorNome,
         compradorEmail,
         compradorTel,
-        produtoNome: 'Método Milionário Cristão',
-        valor: 'R$ 97,00',
+        produtoNome: currentProductName,
+        valor: currentProductPrice,
         metodo: readableMetodo
       });
 
@@ -128,15 +162,17 @@ export default function Checkout() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-4">
-        <h2 className="text-4xl sm:text-6xl font-serif font-black italic tracking-tighter text-[#0F3D2E] leading-none">
-          Customizar Checkout
-        </h2>
-        <p className="text-sm text-gray-500 max-w-xs sm:text-right">
-          Aumente suas conversões personalizando a página de pagamento com vídeos, textos e provas sociais.
-        </p>
-      </div>
+    <div className={`${isPublicCheckout ? 'p-2 sm:p-6 bg-gray-50 min-h-screen' : 'space-y-8'} animate-in fade-in duration-500 max-w-7xl`}>
+      {!isPublicCheckout && (
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-4">
+          <h2 className="text-4xl sm:text-6xl font-serif font-black italic tracking-tighter text-[#0F3D2E] leading-none">
+            Customizar Checkout
+          </h2>
+          <p className="text-sm text-gray-500 max-w-xs sm:text-right">
+            Aumente suas conversões personalizando a página de pagamento com vídeos, textos e provas sociais.
+          </p>
+        </div>
+      )}
       
       {sucesso && (
         <div className="bg-green-50 border border-green-200 text-green-800 rounded-xl p-4 flex items-center gap-3">
@@ -147,7 +183,8 @@ export default function Checkout() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Editor */}
-        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-8 space-y-6 lg:col-span-4 h-fit">
+        {!isPublicCheckout && (
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-8 space-y-6 lg:col-span-4 h-fit">
           <div className="flex items-center gap-2 border-b border-[#E5E7EB] pb-4 mb-6">
             <Settings2 className="w-5 h-5 text-[#0F3D2E]" />
             <h3 className="font-bold text-[#1A1A1A]">Configurações Visuais</h3>
@@ -241,12 +278,14 @@ export default function Checkout() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Preview */}
-        <div className="lg:col-span-8 bg-[#F1F3F2] rounded-2xl border border-[#E5E7EB] p-4 flex flex-col items-center overflow-hidden w-full transition-all duration-300">
-           <div className="flex gap-4 mb-6">
-             <button 
-               onClick={() => setPreviewMode('desktop')}
+        <div className={`${isPublicCheckout ? 'lg:col-span-12 max-w-5xl mx-auto' : 'lg:col-span-8'} bg-[#F1F3F2] rounded-2xl border border-[#E5E7EB] p-4 flex flex-col items-center overflow-hidden w-full transition-all duration-300`}>
+           {!isPublicCheckout && (
+             <div className="flex gap-4 mb-6">
+               <button 
+                 onClick={() => setPreviewMode('desktop')}
                className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow-sm text-sm font-bold border transition-all ${
                  previewMode === 'desktop'
                    ? 'bg-white text-[#0F3D2E] border-[#E5E7EB]'
@@ -266,6 +305,7 @@ export default function Checkout() {
                <Smartphone className="w-4 h-4" /> Mobile
              </button>
            </div>
+           )}
            
            <div className={`bg-white rounded-xl shadow-xl overflow-hidden min-h-[600px] border border-gray-200 flex flex-col transition-all duration-500 ${
              previewMode === 'mobile' ? 'max-w-[375px] w-full border-8 border-slate-900 rounded-3xl' : 'w-full'
@@ -274,7 +314,7 @@ export default function Checkout() {
              <div className="p-8 text-white relative transition-colors duration-300" style={{ backgroundColor: corPrincipal }}>
                <div className="text-xl font-serif font-bold text-[#E5C384]">Plataforma Milionária</div>
                <div className="mt-8 mb-4">
-                 <h4 className="text-3xl font-bold">Método Milionário Cristão</h4>
+                 <h4 className="text-3xl font-bold">{currentProductName}</h4>
                  <p className="opacity-80 mt-2 text-lg">Acesso vitalício + Todos os Bônus Inclusos</p>
                </div>
              </div>
@@ -470,7 +510,7 @@ export default function Checkout() {
                      <div className="pt-4 border-t border-gray-100 mt-6">
                        <div className="flex justify-between items-center mb-4">
                           <span className="font-bold text-gray-600 text-xs">Total a pagar</span>
-                          <span className="text-2xl font-black" style={{ color: corPrincipal }}>R$ 97,00</span>
+                          <span className="text-2xl font-black" style={{ color: corPrincipal }}>{currentProductPrice}</span>
                        </div>
                        <button
                          type="button"

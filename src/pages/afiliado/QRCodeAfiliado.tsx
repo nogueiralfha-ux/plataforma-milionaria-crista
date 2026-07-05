@@ -21,7 +21,8 @@ export default function QRCodeAfiliado() {
     'Josué 1:8 - Então farás prosperar o teu caminho e serás bem-sucedido.'
   ];
 
-  const affiliateLink = productLinks[selectedProduct];
+  const rawAffiliateLink = productLinks[selectedProduct];
+  const affiliateLink = rawAffiliateLink ? rawAffiliateLink.replace('https://plataforma.com', window.location.origin) : '';
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&color=${bgColor.replace('#', '')}&data=${encodeURIComponent(affiliateLink)}`;
 
   const handleCopy = () => {

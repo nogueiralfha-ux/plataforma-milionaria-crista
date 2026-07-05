@@ -32,7 +32,8 @@ export default function MeusLinks() {
   ];
 
   const handleCopy = (url: string, id: number) => {
-    navigator.clipboard.writeText(url);
+    const realLink = url ? url.replace('https://plataforma.com', window.location.origin) : '';
+    navigator.clipboard.writeText(realLink);
     setCopiedLink(id);
     setTimeout(() => setCopiedLink(null), 2000);
   };
@@ -81,7 +82,7 @@ export default function MeusLinks() {
                   <td className="p-4">
                     <div className="flex items-center gap-2 max-w-[200px] truncate text-sm text-gray-500 font-mono">
                       <LinkIcon className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                      {link.url}
+                      {link.url.replace('https://plataforma.com', window.location.origin)}
                     </div>
                   </td>
                   <td className="p-4 text-center text-sm font-medium text-gray-600">{link.cliques}</td>
@@ -101,7 +102,7 @@ export default function MeusLinks() {
                           </>
                         )}
                       </button>
-                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-400 hover:text-[#0F3D2E] transition-colors rounded-lg hover:bg-gray-100">
+                      <a href={link.url.replace('https://plataforma.com', window.location.origin)} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-400 hover:text-[#0F3D2E] transition-colors rounded-lg hover:bg-gray-100">
                         <ExternalLink className="w-4 h-4" />
                       </a>
                     </div>

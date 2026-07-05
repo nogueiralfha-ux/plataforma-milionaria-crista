@@ -32,7 +32,8 @@ export default function Produtos() {
   }, []);
 
   const handleCopy = (link: string) => {
-    navigator.clipboard.writeText(link);
+    const realLink = link ? link.replace('https://plataforma.com', window.location.origin) : '';
+    navigator.clipboard.writeText(realLink);
     setCopiedLink(link);
     setTimeout(() => setCopiedLink(null), 2000);
   };
