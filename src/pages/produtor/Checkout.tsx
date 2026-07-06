@@ -205,7 +205,8 @@ export default function Checkout() {
             status: 'Pendente',
             qrCodeUrl: payData.qrCodeUrl,
             pixKey: payData.pixKey,
-            isRealAsaas: true
+            isRealAsaas: true,
+            quantidade: quantidade
           });
         } else {
           // Simulated Simulator Mode
@@ -220,7 +221,8 @@ export default function Checkout() {
                 tel: webhookData.delivery.whatsapp,
                 pdf: webhookData.delivery.pdf,
                 metodo: readableMetodo,
-                status: 'Aprovado'
+                status: 'Aprovado',
+                quantidade: quantidade
               });
             }
           } else {
@@ -233,7 +235,8 @@ export default function Checkout() {
               pdf: 'metodo-milionario-cristao-ebook.pdf',
               metodo: readableMetodo,
               status: 'Pendente',
-              barcode: '34191.79001 01043.513184 91020.150008 7 98200000009700'
+              barcode: '34191.79001 01043.513184 91020.150008 7 98200000009700',
+              quantidade: quantidade
             });
           }
         }
@@ -572,12 +575,23 @@ export default function Checkout() {
                           >
                             <option value={1}>1 unidade (Frete Normal)</option>
                             <option value={2}>2 unidades (Frete Normal)</option>
-                            <option value={3}>3 unidades (Frete Grátis 🔥)</option>
-                            <option value={4}>4 unidades (Frete Grátis 🔥)</option>
-                            <option value={5}>5 unidades (Frete Grátis 🔥)</option>
+                            <option value={3}>3 unidades (Frete Grátis + Brinde 🔥)</option>
+                            <option value={4}>4 unidades (Frete Grátis + Brinde 🔥)</option>
+                            <option value={5}>5 unidades (Frete Grátis + Brinde 🔥)</option>
                           </select>
                           {quantidade >= 3 && (
-                            <span className="text-[10px] text-green-600 font-bold block animate-bounce">🔥 Parabéns! Você ganhou Frete Grátis!</span>
+                            <div className="space-y-1 mt-1 text-left">
+                              <span className="text-[10px] text-green-600 font-bold block animate-bounce">🔥 Parabéns! Você ganhou Frete Grátis!</span>
+                              {currentProductName.toLowerCase().includes('condrol') && (
+                                <div className="flex items-center gap-2.5 p-2 bg-emerald-50 rounded-xl border border-emerald-100 mt-1">
+                                  <img src="https://i.ibb.co/C5WVpxTb/Chat-GPT-Image-6-de-jul-de-2026-15-22-08.png" alt="E-book Brinde" className="w-7 h-10 object-cover rounded shadow-xs" />
+                                  <div className="text-[9px]">
+                                    <p className="font-extrabold text-emerald-800 uppercase tracking-wide">BRINDE EXCLUSIVO LIBERADO:</p>
+                                    <p className="text-emerald-700 font-medium">E-book Articulações e Mobilidades</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
                       )}
@@ -886,26 +900,45 @@ export default function Checkout() {
             )}
 
             {checkoutSucessoInfo.status === 'Aprovado' && (
-              <div className="bg-gray-50 p-5 rounded-2xl text-left space-y-4 border border-gray-100">
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200 pb-2">Notificação de Envio Simulado</h4>
+              <div className="space-y-4">
+                {/* Free Gift Card if applicable */}
+                {checkoutSucessoInfo.quantidade >= 3 && currentProductName.toLowerCase().includes('condrol') && (
+                  <div className="bg-emerald-50 p-4 border border-emerald-200 rounded-2xl text-left space-y-3 animate-in fade-in duration-300">
+                    <span className="text-[10px] font-extrabold text-emerald-800 uppercase block tracking-wider">🔥 Seu Brinde Exclusivo Liberado!</span>
+                    <div className="flex items-center gap-3">
+                      <img src="https://i.ibb.co/C5WVpxTb/Chat-GPT-Image-6-de-jul-de-2026-15-22-08.png" alt="E-book Brinde" className="w-12 h-16 object-cover rounded-xl shadow-sm border border-emerald-100 shrink-0" />
+                      <div>
+                        <p className="text-xs font-bold text-gray-800">E-book: Articulações e Mobilidades</p>
+                        <p className="text-[10px] text-gray-500">Seu Guia Completo (Enviado por e-mail)</p>
+                        <a href="https://i.ibb.co/C5WVpxTb/Chat-GPT-Image-6-de-jul-de-2026-15-22-08.png" download target="_blank" rel="noopener noreferrer" className="inline-block mt-1 text-[10px] font-bold text-[#0F3D2E] hover:underline">
+                          Download Direto ↓
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg flex-shrink-0">
-                    <Mail className="w-4 h-4" />
+                <div className="bg-gray-50 p-5 rounded-2xl text-left space-y-4 border border-gray-100">
+                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-gray-200 pb-2">Notificação de Envio Simulado</h4>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg flex-shrink-0">
+                      <Mail className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-800">E-mail enviado para: <span className="font-mono font-medium text-gray-500">{checkoutSucessoInfo.email}</span></p>
+                      <p className="text-[11px] text-gray-400 mt-1">Anexo enviado: <span className="font-semibold">{checkoutSucessoInfo.pdf}</span></p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-gray-800">E-mail enviado para: <span className="font-mono font-medium text-gray-500">{checkoutSucessoInfo.email}</span></p>
-                    <p className="text-[11px] text-gray-400 mt-1">Anexo enviado: <span className="font-semibold">{checkoutSucessoInfo.pdf}</span></p>
-                  </div>
-                </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-green-50 text-green-600 rounded-lg flex-shrink-0">
-                    <MessageSquare className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-gray-800">WhatsApp enviado para: <span className="font-mono font-medium text-gray-500">{checkoutSucessoInfo.tel}</span></p>
-                    <p className="text-[11px] text-gray-400 mt-1">"Graça e Paz! Seu pagamento do Método Milionário Cristão foi confirmado. Acesse agora pelo link..."</p>
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-green-50 text-green-600 rounded-lg flex-shrink-0">
+                      <MessageSquare className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-800">WhatsApp enviado para: <span className="font-mono font-medium text-gray-500">{checkoutSucessoInfo.tel}</span></p>
+                      <p className="text-[11px] text-gray-400 mt-1">"Graça e Paz! Seu pagamento do Método Milionário Cristão foi confirmado. Acesse agora pelo link..."</p>
+                    </div>
                   </div>
                 </div>
               </div>
