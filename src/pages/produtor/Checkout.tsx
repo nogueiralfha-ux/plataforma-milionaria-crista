@@ -107,33 +107,57 @@ export default function Checkout() {
       });
 
       if (payData.success) {
-        // If card or PIX, simulate instant webhook approval
-        if (metodoPagamento !== 'boleto') {
-          const webhookData = await postApi('/api/checkout/webhook', { orderId: payData.orderId });
-
-          if (webhookData.success) {
-            setCheckoutSucessoInfo({
-              orderId: payData.orderId,
-              nome: compradorNome,
-              email: webhookData.delivery.email,
-              tel: webhookData.delivery.whatsapp,
-              pdf: webhookData.delivery.pdf,
-              metodo: readableMetodo,
-              status: 'Aprovado'
-            });
+        if (payData.isRealAsaas) {
+          // Real Asaas Integration
+          if (metodoPagamento === 'cartao') {
+            if (payData.invoiceUrl) {
+              window.location.href = payData.invoiceUrl; // Redirect immediately to Asaas card payment page
+              return;
+            }
           }
-        } else {
-          // For boleto, keep it pending and show barcode + simulated settlement trigger
+          
+          // For Pix or other real pending methods
           setCheckoutSucessoInfo({
             orderId: payData.orderId,
             nome: compradorNome,
             email: compradorEmail,
             tel: compradorTel,
-            pdf: 'metodo-milionario-cristao-ebook.pdf',
+            pdf: selectedProductData?.pdfMaterialNome || 'metodo-milionario-cristao-ebook.pdf',
             metodo: readableMetodo,
             status: 'Pendente',
-            barcode: '34191.79001 01043.513184 91020.150008 7 98200000009700'
+            qrCodeUrl: payData.qrCodeUrl,
+            pixKey: payData.pixKey,
+            isRealAsaas: true
           });
+        } else {
+          // Simulated Simulator Mode
+          if (metodoPagamento !== 'boleto') {
+            const webhookData = await postApi('/api/checkout/webhook', { orderId: payData.orderId });
+
+            if (webhookData.success) {
+              setCheckoutSucessoInfo({
+                orderId: payData.orderId,
+                nome: compradorNome,
+                email: webhookData.delivery.email,
+                tel: webhookData.delivery.whatsapp,
+                pdf: webhookData.delivery.pdf,
+                metodo: readableMetodo,
+                status: 'Aprovado'
+              });
+            }
+          } else {
+            // For boleto simulation
+            setCheckoutSucessoInfo({
+              orderId: payData.orderId,
+              nome: compradorNome,
+              email: compradorEmail,
+              tel: compradorTel,
+              pdf: 'metodo-milionario-cristao-ebook.pdf',
+              metodo: readableMetodo,
+              status: 'Pendente',
+              barcode: '34191.79001 01043.513184 91020.150008 7 98200000009700'
+            });
+          }
         }
       }
 
@@ -611,14 +635,77 @@ export default function Checkout() {
 
             <div className="space-y-2">
               <h3 className="text-2xl font-serif font-black text-[#0F3D2E]">
-                {checkoutSucessoInfo.status === 'Aprovado' ? 'Pagamento Aprovado!' : 'Boleto Gerado!'}
+                {checkoutSucessoInfo.status === 'Aprovado' 
+                  ? 'Pagamento Aprovado!' 
+                  : checkoutSucessoInfo.qrCodeUrl 
+                    ? 'Aguardando Pagamento PIX' 
+                    : 'Boleto Gerado!'}
               </h3>
               <p className="text-xs text-gray-500 font-mono">ID do Pedido: {checkoutSucessoInfo.orderId}</p>
               <p className="text-xs font-bold text-gray-600 uppercase">Método: {checkoutSucessoInfo.metodo}</p>
             </div>
 
+            {/* Real Asaas PIX details */}
+            {checkoutSucessoInfo.status === 'Pendente' && checkoutSucessoInfo.qrCodeUrl && (
+              <div className="bg-emerald-50 p-5 border border-emerald-200 rounded-3xl text-left space-y-4">
+                <span className="text-[10px] font-bold text-[#0F3D2E] uppercase block tracking-wider text-center">ESCANEIE O QR CODE PARA PAGAR</span>
+                
+                <div className="mx-auto w-48 h-48 bg-white p-2 rounded-xl border border-emerald-100 shadow-sm flex items-center justify-center">
+                  <img src={checkoutSucessoInfo.qrCodeUrl} alt="QR Code PIX" className="w-full h-full object-contain" />
+                </div>
+
+                {checkoutSucessoInfo.pixKey && (
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase block">PIX Copia e Cola</span>
+                    <div className="flex gap-2 items-center">
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value={checkoutSucessoInfo.pixKey} 
+                        className="w-full text-xs font-mono bg-white border border-emerald-100 p-2.5 rounded-lg focus:outline-none text-gray-600 truncate" 
+                      />
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(checkoutSucessoInfo.pixKey);
+                          alert('Cópia do PIX realizada!');
+                        }}
+                        className="px-4 py-2 bg-[#0F3D2E] text-white rounded-lg text-xs font-bold whitespace-nowrap hover:bg-[#0B2E23] transition-colors"
+                      >
+                        Copiar
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="pt-2 border-t border-emerald-200/50">
+                  <p className="text-[10px] text-emerald-800 leading-relaxed text-center font-bold">Após efetuar o pagamento do PIX, clique no botão abaixo para verificar a liberação automática do seu acesso.</p>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const statusData = await fetchApi<{ success: boolean; status: string }>(`/api/checkout/status/${checkoutSucessoInfo.orderId}`);
+                        if (statusData.success && statusData.status === 'Aprovado') {
+                          setCheckoutSucessoInfo((prev: any) => ({
+                            ...prev,
+                            status: 'Aprovado'
+                          }));
+                          alert('Pagamento confirmado com sucesso! Seu acesso já está liberado na biblioteca.');
+                        } else {
+                          alert('Aguardando confirmação de pagamento do PIX. Pode levar até 1 minuto após o pagamento.');
+                        }
+                      } catch (e) {
+                        alert('Erro ao consultar status do pagamento.');
+                      }
+                    }}
+                    className="w-full mt-2.5 py-2.5 bg-[#0F3D2E] hover:bg-[#0B2E23] text-white font-bold text-xs uppercase rounded-xl transition-colors shadow-sm"
+                  >
+                    Verificar Confirmação de Pagamento
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Boleto specific actions */}
-            {checkoutSucessoInfo.status === 'Pendente' && checkoutSucessoInfo.barcode && (
+            {checkoutSucessoInfo.status === 'Pendente' && !checkoutSucessoInfo.qrCodeUrl && checkoutSucessoInfo.barcode && (
               <div className="bg-amber-50 p-4 border border-amber-200 rounded-2xl text-left space-y-3">
                 <span className="text-[10px] font-bold text-amber-800 uppercase block">CÓDIGO DE BARRAS</span>
                 <div className="flex gap-2 items-center">

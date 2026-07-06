@@ -377,7 +377,8 @@ app.post('/api/checkout/pay', async (req, res) => {
         asaasPaymentId: paymentId,
         qrCodeUrl: qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=asaas-payload-${orderId}`,
         pixKey: pixKey || `00020126580014br.gov.bcb.pix0136asaas-key-${orderId}`,
-        invoiceUrl: paymentData.invoiceUrl
+        invoiceUrl: paymentData.invoiceUrl,
+        isRealAsaas: true
       });
 
     } catch (error: any) {
@@ -410,8 +411,20 @@ app.post('/api/checkout/pay', async (req, res) => {
     success: true,
     orderId: orderIdSimulated,
     qrCodeUrl: asaasPixQrCode,
-    pixKey: `00020126580014br.gov.bcb.pix0136asaas-key-${orderIdSimulated}520400005303986540497.005802BR5915PlataformaMC6009SAOPAULO62070503***`
+    pixKey: `00020126580014br.gov.bcb.pix0136asaas-key-${orderIdSimulated}520400005303986540497.005802BR5915PlataformaMC6009SAOPAULO62070503***`,
+    isRealAsaas: false
   });
+});
+
+app.get('/api/checkout/status/:orderId', (req, res) => {
+  const orderId = req.params.orderId;
+  const db = readDB();
+  const order = db.pedidos.find((p: any) => p.id === orderId);
+  if (order) {
+    res.json({ success: true, status: order.status });
+  } else {
+    res.status(404).json({ success: false, error: 'Pedido não encontrado.' });
+  }
 });
 
 // 4. Asaas Webhook API (Simulator or Real production webhook)

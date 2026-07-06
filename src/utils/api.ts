@@ -105,6 +105,12 @@ export async function fetchApi<T>(url: string): Promise<T> {
     if (url.includes('/api/pedidos')) {
       return db.pedidos as unknown as T;
     }
+    if (url.includes('/api/checkout/status/')) {
+      const parts = url.split('/');
+      const orderId = parts[parts.length - 1];
+      const order = db.pedidos.find((p: any) => p.id === orderId);
+      return { success: true, status: order ? order.status : 'Pendente' } as unknown as T;
+    }
     throw err;
   }
 }
