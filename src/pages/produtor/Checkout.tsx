@@ -24,7 +24,36 @@ export default function Checkout() {
   const [compradorEmail, setCompradorEmail] = useState('');
   const [compradorTel, setCompradorTel] = useState('');
   const [compradorCpf, setCompradorCpf] = useState('');
+  const [compradorCep, setCompradorCep] = useState('');
+  const [quantidade, setQuantidade] = useState(1);
+  const [valorFrete, setValorFrete] = useState(0);
   const [metodoPagamento, setMetodoPagamento] = useState<'pix' | 'cartao' | 'boleto'>('pix');
+
+  const calcularFrete = (cep: string, qtd: number) => {
+    if (qtd >= 3) {
+      setValorFrete(0);
+      return;
+    }
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length < 5) {
+      setValorFrete(0);
+      return;
+    }
+    const regiao = parseInt(cleanCep[0]);
+    let valor = 19.90;
+    if (regiao === 0 || regiao === 1) { // SP
+      valor = 12.90;
+    } else if (regiao === 2) { // RJ/ES
+      valor = 17.90;
+    } else if (regiao === 3) { // MG
+      valor = 15.90;
+    } else if (regiao >= 8) { // Sul
+      valor = 22.90;
+    } else { // Outras regiões
+      valor = 29.90;
+    }
+    setValorFrete(valor);
+  };
 
   // Card specific states
   const [cartaoNumero, setCartaoNumero] = useState('');
@@ -89,12 +118,20 @@ export default function Checkout() {
       return;
     }
 
+    if (selectedProductData?.tipo === 'Físico' && !compradorCep) {
+      alert('Por favor, informe o CEP para entrega do produto físico!');
+      return;
+    }
+
     if (metodoPagamento === 'cartao' && (!cartaoNumero || !cartaoNome || !cartaoValidade || !cartaoCvv)) {
       alert('Por favor, preencha as informações do cartão de crédito/débito!');
       return;
     }
 
     const readableMetodo = metodoPagamento === 'pix' ? 'PIX' : metodoPagamento === 'cartao' ? 'Cartão de Crédito/Débito' : 'Boleto Bancário';
+    const precoNumerico = parseFloat(currentProductPrice.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 97.00;
+    const subtotal = precoNumerico * quantidade;
+    const totalPagar = subtotal + (selectedProductData?.tipo === 'Físico' ? valorFrete : 0);
 
     try {
       // 1. Initiate purchase (creates order on backend)
@@ -103,8 +140,8 @@ export default function Checkout() {
         compradorEmail,
         compradorTel,
         compradorCpf,
-        produtoNome: currentProductName,
-        valor: currentProductPrice,
+        produtoNome: `${currentProductName} (${quantidade}x)`,
+        valor: `R$ ${totalPagar.toFixed(2).replace('.', ',')}`,
         metodo: readableMetodo
       });
 
@@ -477,6 +514,30 @@ export default function Checkout() {
                      </div>
                       
                      {selectedProductData?.tipo === 'Físico' && (
+                        <div className="space-y-1.5 animate-in fade-in duration-300">
+                          <h3 className="font-bold text-[#1A1A1A] border-b border-gray-100 pb-2 pt-2">Quantidade</h3>
+                          <select 
+                            value={quantidade}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              setQuantidade(val);
+                              calcularFrete(compradorCep, val);
+                            }}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-[#E5C384] focus:outline-none bg-white font-bold text-[#0F3D2E]"
+                          >
+                            <option value={1}>1 unidade (Frete Normal)</option>
+                            <option value={2}>2 unidades (Frete Normal)</option>
+                            <option value={3}>3 unidades (Frete Grátis 🔥)</option>
+                            <option value={4}>4 unidades (Frete Grátis 🔥)</option>
+                            <option value={5}>5 unidades (Frete Grátis 🔥)</option>
+                          </select>
+                          {quantidade >= 3 && (
+                            <span className="text-[10px] text-green-600 font-bold block animate-bounce">🔥 Parabéns! Você ganhou Frete Grátis!</span>
+                          )}
+                        </div>
+                      )}
+
+                     {selectedProductData?.tipo === 'Físico' && (
                        <div className="space-y-3 animate-in fade-in duration-300">
                          <h3 className="font-bold text-[#1A1A1A] border-b border-gray-100 pb-3 pt-2 flex items-center gap-1.5">
                            <MapPin className="w-3.5 h-3.5 text-gray-400" /> Endereço de Entrega
@@ -484,6 +545,12 @@ export default function Checkout() {
                          <input 
                            type="text"
                            required
+                           value={compradorCep}
+                           onChange={(e) => {
+                             const val = e.target.value;
+                             setCompradorCep(val);
+                             calcularFrete(val, quantidade);
+                           }}
                            placeholder="CEP (ex: 01001-000)"
                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-[#E5C384] focus:outline-none"
                          />
@@ -613,20 +680,45 @@ export default function Checkout() {
                        )}
                      </div>
 
-                     <div className="pt-4 border-t border-gray-100 mt-6">
-                       <div className="flex justify-between items-center mb-4">
-                          <span className="font-bold text-gray-600 text-xs">Total a pagar</span>
-                          <span className="text-2xl font-black" style={{ color: corPrincipal }}>{currentProductPrice}</span>
-                       </div>
-                       <button
-                         type="button"
-                         onClick={handleCheckoutBuy}
-                         className="w-full h-12 rounded-lg flex flex-col items-center justify-center transition-colors duration-300 shadow-lg cursor-pointer border-0" 
-                         style={{ backgroundColor: corBotao }}
-                       >
-                          <span className="font-bold text-[#0F3D2E] uppercase tracking-widest text-xs">Comprar Agora</span>
-                       </button>
-                     </div>
+                     {(() => {
+                        const precoNumerico = parseFloat(currentProductPrice.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 97.00;
+                        const subtotal = precoNumerico * quantidade;
+                        const totalPagar = subtotal + (selectedProductData?.tipo === 'Físico' ? (quantidade >= 3 ? 0 : valorFrete) : 0);
+                        return (
+                          <div className="pt-4 border-t border-gray-100 mt-6 space-y-2">
+                            <div className="flex justify-between items-center text-xs text-gray-600">
+                              <span>Subtotal ({quantidade}x)</span>
+                              <span>R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+                            </div>
+                            {selectedProductData?.tipo === 'Físico' && (
+                              <div className="flex justify-between items-center text-xs text-gray-600">
+                                <span>Frete</span>
+                                {quantidade >= 3 ? (
+                                  <span className="text-green-600 font-bold uppercase tracking-wider text-[10px]">Grátis</span>
+                                ) : compradorCep.length >= 5 ? (
+                                  <span>R$ {valorFrete.toFixed(2).replace('.', ',')}</span>
+                                ) : (
+                                  <span className="text-gray-400 italic">Informe o CEP</span>
+                                )}
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center mb-4 pt-2 border-t border-gray-100">
+                               <span className="font-bold text-gray-600 text-xs">Total a pagar</span>
+                               <span className="text-2xl font-black" style={{ color: corPrincipal }}>
+                                 R$ {totalPagar.toFixed(2).replace('.', ',')}
+                               </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleCheckoutBuy}
+                              className="w-full h-12 rounded-lg flex flex-col items-center justify-center transition-colors duration-300 shadow-lg cursor-pointer border-0" 
+                              style={{ backgroundColor: corBotao }}
+                            >
+                               <span className="font-bold text-[#0F3D2E] uppercase tracking-widest text-xs">Comprar Agora</span>
+                            </button>
+                          </div>
+                        );
+                      })()}
                    </div>
                  </div>
                  
