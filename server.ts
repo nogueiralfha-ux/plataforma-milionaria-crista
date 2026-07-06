@@ -5,124 +5,40 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import * as database from './db.js';
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'plataforma-milionaria-crista-secret-key';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
+const JWT_SECRET = process.env.JWT_SECRET || 'plataforma-milionaria-crista-secret-key';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const DB_FILE = path.join(__dirname, 'database.json');
+
+// Initialize Database connection and schema
+database.initDb().catch(err => {
+  console.error('[DB] Falha crítica ao inicializar PostgreSQL:', err);
+});
 
 app.use(cors());
 app.use(express.json());
-
-// Initial database structure
-const initialDB = {
-  users: [
-    { id: 1, nome: 'Pr. Gabriel Santos', email: 'gabriel.santos@gmail.com', role: 'Produtor', status: 'Ativo' },
-    { id: 2, nome: 'Ana Paula Vasconcelos', email: 'anapaula@gmail.com', role: 'Afiliado', status: 'Ativo' },
-    { id: 3, nome: 'João Lucas Teixeira', email: 'joao.lucas@gmail.com', role: 'Afiliado', status: 'Pendente' },
-    { id: 4, nome: 'Ruth Fonseca', email: 'ruth.fonseca@gmail.com', role: 'Cliente', status: 'Ativo' }
-  ],
-  produtos: [
-    {
-      id: 1,
-      nome: 'Método Milionário Cristão',
-      preco: 'R$ 997,00',
-      vendas: 142,
-      comissao: '50%',
-      status: 'Ativo',
-      linkAfiliado: 'https://plataforma.com/inv/mmc-88291',
-      videoAulaUrl: 'https://vimeo.com/83918239',
-      pdfMaterialNome: 'metodo-milionario-cristao-ebook.pdf'
-    },
-    {
-      id: 2,
-      nome: 'Jornada da Prosperidade',
-      preco: 'R$ 497,00',
-      vendas: 89,
-      comissao: '40%',
-      status: 'Ativo',
-      linkAfiliado: 'https://plataforma.com/inv/jdp-44122',
-      videoAulaUrl: 'https://vimeo.com/83918240',
-      pdfMaterialNome: 'jornada-da-prosperidade-ebook.pdf'
-    }
-  ],
-  pedidos: [
-    { id: 'ORD-98218', data: '03/07/2026', cliente: 'Roberto Firmino', email: 'roberto@gmail.com', whatsapp: '11999998888', produto: 'Método Milionário Cristão', valor: 'R$ 997,00', metodo: 'PIX', status: 'Aprovado' },
-    { id: 'ORD-98102', data: '02/07/2026', cliente: 'Beatriz Azevedo', email: 'beatriz@gmail.com', whatsapp: '21988887777', produto: 'Jornada da Prosperidade', valor: 'R$ 497,00', metodo: 'Cartão de Crédito', status: 'Aprovado' }
-  ],
-  cliente_biblioteca: [
-    {
-      id: 1,
-      nome: 'Método Milionário Cristão',
-      preco: 'R$ 997,00',
-      videoAulaUrl: 'https://vimeo.com/83918239',
-      pdfMaterialNome: 'metodo-milionario-cristao-ebook.pdf',
-      dataCompra: '25/06/2026'
-    }
-  ],
-  saques: [
-    { id: 'SQ-9932', nome: 'Ana Paula Vasconcelos', chave: 'anapaula@gmail.com', valor: 450.00, data: '03/07/2026', status: 'Pendente' },
-    { id: 'SQ-9931', nome: 'João Lucas Teixeira', chave: '000.111.222-33', valor: 1250.00, data: '02/07/2026', status: 'Pendente' }
-  ],
-  configuracoes: {
-    siteName: 'Plataforma Milionária Cristã',
-    fee: '10',
-    supportEmail: 'suporte@plataformamilionariacrista.com'
-  }
-};
-
-// Helper function to read DB
-const readDB = () => {
-  let db: any = {};
-  if (!fs.existsSync(DB_FILE)) {
-    db = initialDB;
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
-  } else {
-    try {
-      const data = fs.readFileSync(DB_FILE, 'utf-8');
-      db = JSON.parse(data || '{}');
-    } catch (e) {
-      db = initialDB;
-    }
-  }
-  // Ensure basic arrays exist to prevent TypeErrors
-  if (!db.users) db.users = [];
-  if (!db.produtos) db.produtos = [];
-  if (!db.pedidos) db.pedidos = [];
-  if (!db.cliente_biblioteca) db.cliente_biblioteca = [];
-  if (!db.saques) db.saques = [];
-  if (!db.configuracoes) {
-    db.configuracoes = {
-      siteName: 'Plataforma Milionária Cristã',
-      fee: '10',
-      supportEmail: 'suporte@plataformamilionariacrista.com'
-    };
-  }
-  return db;
-};
-
-// Helper function to write DB
-const writeDB = (data: any) => {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
-};
 
 // -------------------------------------------------------------
 // API ENDPOINTS
 // -------------------------------------------------------------
 
 // 1. Auth API
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   const { nome, email, password, role } = req.body;
   if (!nome || !email || !password || !role) {
     return res.status(400).json({ success: false, error: 'Todos os campos são obrigatórios.' });
   }
 
-  const db = readDB();
-  const userExists = db.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+  const users = await database.getUsers();
+  const userExists = users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
   if (userExists) {
     return res.status(400).json({ success: false, error: 'Este e-mail já está cadastrado.' });
   }
@@ -137,8 +53,7 @@ app.post('/api/auth/register', (req, res) => {
     status: 'Ativo'
   };
 
-  db.users.push(newUser);
-  writeDB(db);
+  await database.saveUser(newUser);
 
   const token = jwt.sign({ id: newUser.id, email: newUser.email, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
 
@@ -155,7 +70,7 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ success: false, error: 'E-mail e senha são obrigatórios.' });
@@ -173,8 +88,8 @@ app.post('/api/auth/login', (req, res) => {
     return res.json({ success: true, token, user: adminUser });
   }
 
-  const db = readDB();
-  const user = db.users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+  const users = await database.getUsers();
+  const user = users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
   
   if (!user) {
     return res.status(401).json({ success: false, error: 'Usuário não encontrado.' });
@@ -208,18 +123,17 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 // 2. Products API
-app.get('/api/produtos', (req, res) => {
-  const db = readDB();
-  res.json(db.produtos);
+app.get('/api/produtos', async (req, res) => {
+  const produtos = await database.getProdutos();
+  res.json(produtos);
 });
 
-app.post('/api/produtos', (req, res) => {
+app.post('/api/produtos', async (req, res) => {
   try {
     const { nome, preco, comissao, videoAulaUrl, pdfMaterialNome, tipo } = req.body;
     if (!nome) {
       return res.status(400).json({ success: false, error: 'Nome do produto é obrigatório.' });
     }
-    const db = readDB();
     const cleanPreco = parseFloat(String(preco || '0')) || 0;
     const newProduct = {
       id: Date.now(),
@@ -233,8 +147,7 @@ app.post('/api/produtos', (req, res) => {
       pdfMaterialNome: pdfMaterialNome || `${nome.toLowerCase().replace(/\s+/g, '-')}-ebook.pdf`,
       tipo: tipo || 'Curso'
     };
-    db.produtos.unshift(newProduct);
-    writeDB(db);
+    await database.saveProduto(newProduct);
     res.json({ success: true, produto: newProduct });
   } catch (error: any) {
     console.error('Erro ao cadastrar produto:', error);
@@ -242,30 +155,32 @@ app.post('/api/produtos', (req, res) => {
   }
 });
 
-app.put('/api/produtos/:id', (req, res) => {
+app.put('/api/produtos/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   const { nome, preco, comissao, videoAulaUrl, pdfMaterialNome, status, tipo } = req.body;
-  const db = readDB();
-  db.produtos = db.produtos.map((p: any) => 
-    p.id === id 
-      ? { 
-          ...p, 
-          nome, 
-          preco: preco.includes('R$') ? preco : `R$ ${parseFloat(preco).toFixed(2).replace('.', ',')}`, 
-          comissao: comissao.includes('%') ? comissao : `${comissao}%`, 
-          status,
-          videoAulaUrl,
-          pdfMaterialNome,
-          tipo: tipo || p.tipo || 'Curso'
-        } 
-      : p
-  );
-  writeDB(db);
+  const produtos = await database.getProdutos();
+  const p = produtos.find((x: any) => x.id === id);
+  if (!p) {
+    return res.status(404).json({ success: false, error: 'Produto não encontrado.' });
+  }
+  
+  const updatedProduct = {
+    ...p,
+    nome,
+    preco: preco.includes('R$') ? preco : `R$ ${parseFloat(preco).toFixed(2).replace('.', ',')}`,
+    comissao: comissao.includes('%') ? comissao : `${comissao}%`,
+    status,
+    videoAulaUrl,
+    pdfMaterialNome,
+    tipo: tipo || p.tipo || 'Curso'
+  };
+  
+  await database.saveProduto(updatedProduct);
   res.json({ success: true });
 });
 
 app.post('/api/checkout/pay', async (req, res) => {
-  const { compradorNome, compradorEmail, compradorTel, produtoNome, valor, metodo } = req.body;
+  const { compradorNome, compradorEmail, compradorTel, compradorCpf, produtoNome, valor, metodo } = req.body;
   
   const orderId = `ORD-${Math.floor(Math.random() * 90000) + 10000}`;
   const cleanValor = parseFloat(
@@ -298,6 +213,7 @@ app.post('/api/checkout/pay', async (req, res) => {
           name: compradorNome,
           email: compradorEmail,
           phone: compradorTel,
+          cpfCnpj: compradorCpf,
           notificationDisabled: true
         })
       });
@@ -355,7 +271,6 @@ app.post('/api/checkout/pay', async (req, res) => {
       }
 
       // Store transaction in Pending state
-      const db = readDB();
       const newOrder = {
         id: orderId,
         asaasPaymentId: paymentId,
@@ -368,8 +283,7 @@ app.post('/api/checkout/pay', async (req, res) => {
         metodo: metodo || 'PIX',
         status: 'Pendente'
       };
-      db.pedidos.unshift(newOrder);
-      writeDB(db);
+      await database.savePedido(newOrder);
 
       return res.json({
         success: true,
@@ -391,7 +305,6 @@ app.post('/api/checkout/pay', async (req, res) => {
   const orderIdSimulated = orderId;
   const asaasPixQrCode = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=asaas-payload-${orderIdSimulated}`;
 
-  const db = readDB();
   const newOrder = {
     id: orderIdSimulated,
     asaasPaymentId: `sim-${orderIdSimulated}`,
@@ -404,8 +317,7 @@ app.post('/api/checkout/pay', async (req, res) => {
     metodo: metodo || 'PIX',
     status: 'Pendente'
   };
-  db.pedidos.unshift(newOrder);
-  writeDB(db);
+  await database.savePedido(newOrder);
 
   res.json({
     success: true,
@@ -416,10 +328,10 @@ app.post('/api/checkout/pay', async (req, res) => {
   });
 });
 
-app.get('/api/checkout/status/:orderId', (req, res) => {
+app.get('/api/checkout/status/:orderId', async (req, res) => {
   const orderId = req.params.orderId;
-  const db = readDB();
-  const order = db.pedidos.find((p: any) => p.id === orderId);
+  const orders = await database.getPedidos();
+  const order = orders.find((p: any) => p.id === orderId);
   if (order) {
     res.json({ success: true, status: order.status });
   } else {
@@ -428,7 +340,7 @@ app.get('/api/checkout/status/:orderId', (req, res) => {
 });
 
 // 4. Asaas Webhook API (Simulator or Real production webhook)
-app.post('/api/checkout/webhook', (req, res) => {
+app.post('/api/checkout/webhook', async (req, res) => {
   const body = req.body;
   
   // Real Asaas Webhook payload check or manual simulated webhook check
@@ -444,45 +356,39 @@ app.post('/api/checkout/webhook', (req, res) => {
     return res.json({ success: true, message: 'Evento ignorado.' });
   }
 
-  const db = readDB();
-
-  // Find order and mark as Approved
-  let foundOrder: any = null;
-  db.pedidos = db.pedidos.map((p: any) => {
-    if (p.id === orderId || (p.asaasPaymentId && p.asaasPaymentId === asaasPaymentId)) {
-      foundOrder = { ...p, status: 'Aprovado' };
-      return foundOrder;
-    }
-    return p;
-  });
+  const pedidos = await database.getPedidos();
+  const foundOrder = pedidos.find((p: any) => p.id === orderId || (p.asaasPaymentId && p.asaasPaymentId === asaasPaymentId));
 
   if (!foundOrder) {
     return res.status(404).json({ success: false, error: 'Pedido não encontrado.' });
   }
 
+  foundOrder.status = 'Aprovado';
+  await database.savePedido(foundOrder);
+
   // Increment product sales count
-  db.produtos = db.produtos.map((p: any) => 
-    p.nome === foundOrder.produto ? { ...p, vendas: (p.vendas || 0) + 1 } : p
-  );
+  const produtos = await database.getProdutos();
+  const targetProduct = produtos.find((p: any) => p.nome === foundOrder.produto) || produtos[0];
+  if (targetProduct) {
+    targetProduct.vendas = (targetProduct.vendas || 0) + 1;
+    await database.saveProduto(targetProduct);
+  }
 
   // Add product to client library
-  const targetProduct = db.produtos.find((p: any) => p.nome === foundOrder.produto) || db.produtos[0];
-  
-  // Check if client library already has this product
-  const alreadyUnlocked = db.cliente_biblioteca.find((p: any) => p.nome === targetProduct.nome);
+  const lib = await database.getClienteBibliotecaAll();
+  const alreadyUnlocked = lib.find((p: any) => p.comprador_email === foundOrder.email && p.nome === targetProduct.nome);
   if (!alreadyUnlocked) {
     const unlockedProduct = {
       id: Date.now(),
+      comprador_email: foundOrder.email,
       nome: targetProduct.nome,
       preco: targetProduct.preco,
-      videoAulaUrl: targetProduct.videoAulaUrl,
-      pdfMaterialNome: targetProduct.pdfMaterialNome,
-      dataCompra: new Date().toLocaleDateString('pt-BR')
+      video_aula_url: targetProduct.videoAulaUrl || targetProduct.video_aula_url,
+      pdf_material_nome: targetProduct.pdfMaterialNome || targetProduct.pdf_material_nome,
+      data_compra: new Date().toLocaleDateString('pt-BR')
     };
-    db.cliente_biblioteca.unshift(unlockedProduct);
+    await database.addClienteBiblioteca(unlockedProduct);
   }
-
-  writeDB(db);
 
   console.log(`[DELIVERY] Acesso liberado para ${foundOrder.email} - Produto: ${targetProduct.nome}`);
 
@@ -492,47 +398,49 @@ app.post('/api/checkout/webhook', (req, res) => {
     delivery: {
       email: foundOrder.email,
       whatsapp: foundOrder.whatsapp,
-      pdf: targetProduct.pdfMaterialNome
+      pdf: targetProduct.pdfMaterialNome || targetProduct.pdf_material_nome
     }
   });
 });
 
 // 5. Library API
-app.get('/api/cliente/biblioteca', (req, res) => {
-  const db = readDB();
-  res.json(db.cliente_biblioteca);
+app.get('/api/cliente/biblioteca', async (req, res) => {
+  const email = req.query.email as string;
+  if (email) {
+    const data = await database.getClienteBiblioteca(email);
+    return res.json(data);
+  }
+  const data = await database.getClienteBibliotecaAll();
+  res.json(data);
 });
 
 // 6. Orders and Finance
-app.get('/api/pedidos', (req, res) => {
-  const db = readDB();
-  res.json(db.pedidos);
+app.get('/api/pedidos', async (req, res) => {
+  const data = await database.getPedidos();
+  res.json(data);
 });
 
 // 7. Users
-app.get('/api/usuarios', (req, res) => {
-  const db = readDB();
-  res.json(db.users);
+app.get('/api/usuarios', async (req, res) => {
+  const data = await database.getUsers();
+  res.json(data);
 });
 
-app.put('/api/usuarios/:id/status', (req, res) => {
+app.put('/api/usuarios/:id/status', async (req, res) => {
   const id = parseInt(req.params.id);
   const { status } = req.body;
-  const db = readDB();
-  db.users = db.users.map((u: any) => u.id === id ? { ...u, status } : u);
-  writeDB(db);
+  await database.updateUserStatus(id, status);
   res.json({ success: true });
 });
 
 // 8. Withdraw requests (Saques)
-app.get('/api/saques', (req, res) => {
-  const db = readDB();
-  res.json(db.saques);
+app.get('/api/saques', async (req, res) => {
+  const data = await database.getSaques();
+  res.json(data);
 });
 
-app.post('/api/saques', (req, res) => {
+app.post('/api/saques', async (req, res) => {
   const { valor, chave, banco, nome } = req.body;
-  const db = readDB();
   const newSaque = {
     id: `SQ-${Math.floor(Math.random() * 9000) + 1000}`,
     nome: nome || 'Usuário Afiliado',
@@ -542,31 +450,32 @@ app.post('/api/saques', (req, res) => {
     banco: banco || 'Conta Bancária (PIX)',
     status: 'Pendente'
   };
-  db.saques.unshift(newSaque);
-  writeDB(db);
+  await database.saveSaque(newSaque);
   res.json({ success: true, saque: newSaque });
 });
 
-app.put('/api/saques/:id/status', (req, res) => {
+app.put('/api/saques/:id/status', async (req, res) => {
   const id = req.params.id;
   const { status } = req.body;
-  const db = readDB();
-  db.saques = db.saques.map((s: any) => s.id === id ? { ...s, status } : s);
-  writeDB(db);
+  const saques = await database.getSaques();
+  const s = saques.find((x: any) => x.id === id);
+  if (!s) {
+    return res.status(404).json({ success: false, error: 'Saque não encontrado.' });
+  }
+  s.status = status;
+  await database.saveSaque(s);
   res.json({ success: true });
 });
 
 // 9. Configurações API
-app.get('/api/configuracoes', (req, res) => {
-  const db = readDB();
-  res.json(db.configuracoes);
+app.get('/api/configuracoes', async (req, res) => {
+  const data = await database.getConfiguracoes();
+  res.json(data);
 });
 
-app.put('/api/configuracoes', (req, res) => {
+app.put('/api/configuracoes', async (req, res) => {
   const { siteName, fee, supportEmail } = req.body;
-  const db = readDB();
-  db.configuracoes = { siteName, fee, supportEmail };
-  writeDB(db);
+  await database.saveConfiguracoes({ siteName, fee, supportEmail });
   res.json({ success: true });
 });
 

@@ -23,6 +23,7 @@ export default function Checkout() {
   const [compradorNome, setCompradorNome] = useState('');
   const [compradorEmail, setCompradorEmail] = useState('');
   const [compradorTel, setCompradorTel] = useState('');
+  const [compradorCpf, setCompradorCpf] = useState('');
   const [metodoPagamento, setMetodoPagamento] = useState<'pix' | 'cartao' | 'boleto'>('pix');
 
   // Card specific states
@@ -83,8 +84,8 @@ export default function Checkout() {
   };
 
   const handleCheckoutBuy = async () => {
-    if (!compradorNome || !compradorEmail || !compradorTel) {
-      alert('Por favor, preencha todos os campos no formulário para simular a compra!');
+    if (!compradorNome || !compradorEmail || !compradorTel || !compradorCpf) {
+      alert('Por favor, preencha todos os campos no formulário, incluindo o CPF/CNPJ!');
       return;
     }
 
@@ -101,6 +102,7 @@ export default function Checkout() {
         compradorNome,
         compradorEmail,
         compradorTel,
+        compradorCpf,
         produtoNome: currentProductName,
         valor: currentProductPrice,
         metodo: readableMetodo
@@ -165,6 +167,7 @@ export default function Checkout() {
       setCompradorNome('');
       setCompradorEmail('');
       setCompradorTel('');
+      setCompradorCpf('');
       setCartaoNumero('');
       setCartaoNome('');
       setCartaoValidade('');
@@ -455,14 +458,22 @@ export default function Checkout() {
                          placeholder="Seu Melhor E-mail"
                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-[#E5C384] focus:outline-none"
                        />
-                       <input 
-                         type="tel"
-                         required
-                         value={compradorTel}
-                         onChange={(e) => setCompradorTel(e.target.value)}
-                         placeholder="WhatsApp (ex: 11999998888)"
-                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-[#E5C384] focus:outline-none"
-                       />
+                        <input 
+                          type="tel"
+                          required
+                          value={compradorTel}
+                          onChange={(e) => setCompradorTel(e.target.value)}
+                          placeholder="WhatsApp (ex: 11999998888)"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-[#E5C384] focus:outline-none"
+                        />
+                        <input 
+                          type="text"
+                          required
+                          value={compradorCpf}
+                          onChange={(e) => setCompradorCpf(e.target.value)}
+                          placeholder="CPF ou CNPJ (apenas números)"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-1 focus:ring-[#E5C384] focus:outline-none"
+                        />
                      </div>
                       
                      {selectedProductData?.tipo === 'Físico' && (
