@@ -391,7 +391,13 @@ export default function Checkout() {
                <div className="text-xl font-serif font-bold text-[#E5C384]">Plataforma Milionária</div>
                <div className="mt-8 mb-4">
                  <h4 className="text-3xl font-bold">{currentProductName}</h4>
-                 <p className="opacity-80 mt-2 text-lg">Acesso vitalício + Todos os Bônus Inclusos</p>
+                 <p className="opacity-80 mt-2 text-lg">
+                   {selectedProductData?.tipo === 'Físico' 
+                     ? 'Produto Físico Original • Envio Rápido e Seguro' 
+                     : selectedProductData?.tipo === 'Digital'
+                       ? 'Download Digital Imediato • Acesso Vitalício'
+                       : 'Acesso Vitalício + Todos os Bônus Inclusos'}
+                 </p>
                </div>
              </div>
              
