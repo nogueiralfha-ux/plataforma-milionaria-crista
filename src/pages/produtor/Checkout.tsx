@@ -62,9 +62,48 @@ export default function Checkout() {
   const [cartaoCvv, setCartaoCvv] = useState('');
 
   const [checkoutSucessoInfo, setCheckoutSucessoInfo] = useState<any>(null);
-  
   const [selectedProductData, setSelectedProductData] = useState<any>(null);
   const [produtosList, setProdutosList] = useState<any[]>([]);
+
+  // Social Proof Fomo Popup states
+  const [showFomo, setShowFomo] = useState(false);
+  const [fomoIndex, setFomoIndex] = useState(0);
+
+  const fomoPurchases = [
+    { nome: 'Pr. Marcos Lima', cidade: 'Belo Horizonte - MG', tempo: 'há 2 minutos' },
+    { nome: 'Ana Carolina Vasconcelos', cidade: 'Curitiba - PR', tempo: 'há 5 minutos' },
+    { nome: 'Irmã Cleide Souza', cidade: 'Salvador - BA', tempo: 'há 12 minutos' },
+    { nome: 'João Pedro Silva', cidade: 'Campinas - SP', tempo: 'há 18 minutos' },
+    { nome: 'Sarah Santos', cidade: 'Niterói - RJ', tempo: 'há 22 minutos' },
+    { nome: 'Presb. Lucas Teixeira', cidade: 'Goiânia - GO', tempo: 'há 31 minutos' },
+    { nome: 'Ruth Fonseca', cidade: 'Joinville - SC', tempo: 'há 45 minutos' }
+  ];
+
+  useEffect(() => {
+    if (!isPublicCheckout) return;
+
+    const initialTimeout = setTimeout(() => {
+      setShowFomo(true);
+    }, 5000);
+
+    const interval = setInterval(() => {
+      setShowFomo(false);
+      setTimeout(() => {
+        setFomoIndex((prev) => (prev + 1) % fomoPurchases.length);
+        setShowFomo(true);
+      }, 1000);
+    }, 12000);
+
+    const hideInterval = setInterval(() => {
+      setShowFomo(false);
+    }, 10000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+      clearInterval(hideInterval);
+    };
+  }, [isPublicCheckout]);
 
   useEffect(() => {
     const loadProductData = async () => {
@@ -880,6 +919,20 @@ export default function Checkout() {
                 Concluir e Voltar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Social Proof / Fomo Notification Popup */}
+      {isPublicCheckout && fomoPurchases[fomoIndex] && (
+        <div className={`fixed bottom-4 left-4 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 max-w-sm flex items-center gap-3 transition-all duration-500 transform ${showFomo ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0 pointer-events-none'}`}>
+          <div className="w-10 h-10 bg-[#0F3D2E]/10 text-[#0F3D2E] rounded-full flex items-center justify-center font-bold text-sm shrink-0">
+            ✓
+          </div>
+          <div className="text-left">
+            <p className="text-xs font-extrabold text-[#1A1A1A]">{fomoPurchases[fomoIndex].nome}</p>
+            <p className="text-[10px] text-gray-500 font-medium">{fomoPurchases[fomoIndex].cidade}</p>
+            <p className="text-[11px] text-emerald-600 font-bold mt-0.5">Adquiriu {currentProductName} ({fomoPurchases[fomoIndex].tempo})</p>
           </div>
         </div>
       )}
